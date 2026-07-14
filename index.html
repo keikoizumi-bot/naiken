@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>内見候補物件 — 08 Equitas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Cormorant+Garamond:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#152436;
+    --navy-2:#1f3550;
+    --ivory:#f6f3ec;
+    --ivory-2:#efe9dd;
+    --line:#d8d0c0;
+    --ink:#1a2028;
+    --muted:#6b6558;
+    --accent:#9a7b3f;      /* muted brass */
+    --accent-soft:#c9a75f;
+    --go:#2f6b4f;          /* viewing green */
+    --white:#ffffff;
+    --shadow:0 1px 2px rgba(21,36,54,.06),0 8px 24px rgba(21,36,54,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Zen Kaku Gothic New",system-ui,sans-serif;
+    background:var(--ivory);color:var(--ink);
+    -webkit-font-smoothing:antialiased;line-height:1.6;
+  }
+  .wrap{max-width:1320px;margin:0 auto;padding:0 24px}
+
+  /* ---------- Header ---------- */
+  header{
+    background:var(--navy);color:var(--ivory);
+    border-bottom:1px solid rgba(255,255,255,.08);
+    position:sticky;top:0;z-index:40;
+  }
+  .head-inner{display:flex;align-items:center;justify-content:space-between;
+    padding:16px 24px;max-width:1320px;margin:0 auto;gap:16px}
+  .brand{display:flex;align-items:baseline;gap:12px;min-width:0}
+  .brand .logo{font-family:"Cormorant Garamond",serif;font-size:26px;font-weight:600;letter-spacing:.02em;color:var(--accent-soft)}
+  .brand .sub{font-size:12px;letter-spacing:.14em;color:rgba(246,243,236,.55);text-transform:uppercase;white-space:nowrap}
+  .head-meta{font-family:"IBM Plex Mono",monospace;font-size:12px;color:rgba(246,243,236,.6);text-align:right;line-height:1.5}
+  .head-meta b{color:var(--accent-soft);font-weight:500}
+
+  /* ---------- Hero strip ---------- */
+  .hero{background:var(--navy-2);color:var(--ivory);padding:34px 0 30px;
+    border-bottom:1px solid rgba(255,255,255,.06)}
+  .hero .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--accent-soft);margin-bottom:12px}
+  .hero h1{font-family:"Cormorant Garamond",serif;font-weight:500;font-size:clamp(30px,4.4vw,50px);
+    line-height:1.08;letter-spacing:.01em}
+  .hero h1 .ja{display:block;font-family:"Zen Kaku Gothic New",sans-serif;font-weight:400;
+    font-size:clamp(14px,1.6vw,17px);letter-spacing:.06em;color:rgba(246,243,236,.7);margin-top:14px;line-height:1.7}
+
+  /* ---------- Controls bar ---------- */
+  .controls{position:sticky;top:65px;z-index:30;background:var(--ivory);
+    border-bottom:1px solid var(--line);padding:14px 0}
+  .controls-inner{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .filter-group{display:flex;align-items:center;gap:8px}
+  .filter-label{font-size:12px;letter-spacing:.1em;color:var(--muted);
+    font-family:"IBM Plex Mono",monospace;text-transform:uppercase}
+  .chip{border:1px solid var(--line);background:var(--white);color:var(--ink);
+    font-family:inherit;font-size:13px;padding:7px 15px;border-radius:999px;cursor:pointer;
+    transition:.16s;letter-spacing:.02em;white-space:nowrap}
+  .chip:hover{border-color:var(--accent)}
+  .chip.active{background:var(--navy);color:var(--ivory);border-color:var(--navy)}
+  .chip .n{font-family:"IBM Plex Mono",monospace;font-size:11px;opacity:.6;margin-left:5px}
+  .spacer{flex:1}
+  .wishlist-btn{display:flex;align-items:center;gap:9px;background:var(--go);color:#fff;
+    border:none;padding:9px 17px;border-radius:999px;cursor:pointer;font-family:inherit;
+    font-size:13px;letter-spacing:.02em;transition:.16s;box-shadow:var(--shadow)}
+  .wishlist-btn:hover{filter:brightness(1.08)}
+  .wishlist-btn .count{font-family:"IBM Plex Mono",monospace;background:rgba(255,255,255,.22);
+    border-radius:999px;min-width:20px;height:20px;display:inline-flex;align-items:center;
+    justify-content:center;font-size:12px;padding:0 6px}
+  .add-btn{background:var(--white);color:var(--navy);border:1px solid var(--navy);
+    padding:9px 16px;border-radius:999px;cursor:pointer;font-family:inherit;font-size:13px;
+    letter-spacing:.02em;transition:.16s}
+  .add-btn:hover{background:var(--navy);color:var(--ivory)}
+
+  /* Add-property modal */
+  .add-scrim{position:fixed;inset:0;background:rgba(21,36,54,.55);opacity:0;pointer-events:none;
+    transition:.2s;z-index:55;display:flex;align-items:flex-start;justify-content:center;
+    padding:40px 20px;overflow-y:auto}
+  .add-scrim.open{opacity:1;pointer-events:auto}
+  .add-box{background:var(--ivory);width:min(680px,96vw);border-radius:6px;overflow:hidden;
+    box-shadow:0 20px 60px rgba(21,36,54,.3);transform:translateY(10px);transition:.2s;margin:auto}
+  .add-scrim.open .add-box{transform:none}
+  .add-head{background:var(--navy);color:var(--ivory);padding:20px 26px;display:flex;
+    align-items:center;justify-content:space-between}
+  .add-head h2{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:24px}
+  .add-head .sub{font-size:11px;color:rgba(246,243,236,.6);font-family:"IBM Plex Mono",monospace;
+    letter-spacing:.08em;margin-top:2px}
+  .add-head .x{background:none;border:none;color:var(--ivory);font-size:22px;cursor:pointer;opacity:.7}
+  .add-head .x:hover{opacity:1}
+  .add-body{padding:22px 26px 8px}
+  .dropzone{border:1.5px dashed var(--line);border-radius:6px;background:var(--white);
+    padding:26px 20px;text-align:center;cursor:pointer;transition:.16s;margin-bottom:20px}
+  .dropzone:hover,.dropzone.drag{border-color:var(--accent);background:var(--ivory-2)}
+  .dropzone .dz-ic{color:var(--accent);margin-bottom:8px}
+  .dropzone .dz-t{font-size:14px;color:var(--ink);font-weight:500}
+  .dropzone .dz-s{font-size:12px;color:var(--muted);margin-top:4px}
+  .dropzone.has-file{border-color:var(--go);border-style:solid}
+  .dropzone.has-file .dz-t{color:var(--go)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:11px;letter-spacing:.06em;color:var(--muted);
+    font-family:"IBM Plex Mono",monospace;text-transform:uppercase}
+  .field label .req{color:var(--accent)}
+  .field input,.field select{font-family:inherit;font-size:14px;padding:9px 11px;
+    border:1px solid var(--line);border-radius:4px;background:var(--white);color:var(--ink);
+    transition:.15s}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+  .field .hint{font-size:11px;color:var(--muted)}
+  .field .hint a{color:var(--accent)}
+  .geo-row{display:flex;gap:8px;align-items:flex-end}
+  .geo-row .field{flex:1}
+  .geo-btn{white-space:nowrap;font-family:inherit;font-size:12px;padding:9px 12px;border-radius:4px;
+    border:1px solid var(--navy);background:var(--white);color:var(--navy);cursor:pointer;transition:.15s}
+  .geo-btn:hover{background:var(--navy);color:var(--ivory)}
+  .add-foot{padding:16px 26px 22px;display:flex;gap:10px;align-items:center;justify-content:flex-end;
+    border-top:1px solid var(--line);margin-top:16px;background:var(--ivory-2)}
+  .add-foot .msg{margin-right:auto;font-size:12px;color:var(--muted)}
+  .add-foot .msg.err{color:#b3402f}
+  .add-foot .msg.ok{color:var(--go)}
+  .btn-secondary{font-family:inherit;font-size:13px;padding:10px 18px;border-radius:4px;
+    border:1px solid var(--line);background:var(--white);color:var(--ink);cursor:pointer;transition:.15s}
+  .btn-secondary:hover{border-color:var(--muted)}
+  .btn-primary{font-family:inherit;font-size:13px;padding:10px 20px;border-radius:4px;border:none;
+    background:var(--navy);color:var(--ivory);cursor:pointer;transition:.15s}
+  .btn-primary:hover{background:var(--navy-2)}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed}
+
+  /* Unsaved banner */
+  .save-bar{position:fixed;bottom:0;left:0;right:0;background:var(--accent);color:#fff;
+    padding:12px 24px;display:none;align-items:center;gap:16px;z-index:45;
+    box-shadow:0 -4px 20px rgba(21,36,54,.15);font-size:13px}
+  .save-bar.show{display:flex}
+  .save-bar .sb-txt{flex:1}
+  .save-bar .sb-txt b{font-weight:700}
+  .save-bar button{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:4px;
+    border:none;cursor:pointer;background:#fff;color:var(--accent);font-weight:500;transition:.15s}
+  .save-bar button:hover{filter:brightness(.96)}
+  .save-bar .sb-dismiss{background:transparent;color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.4)}
+  .badge-new{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:9px;
+    letter-spacing:.06em;background:var(--go);color:#fff;padding:2px 6px;border-radius:3px;margin-left:6px}
+
+  /* ---------- Layout（地図＝上／物件リスト＝下） ---------- */
+  .layout{display:block}
+
+  /* Map：上部に固定表示（スクロールしても残る） */
+  .map-col{position:sticky;top:132px;height:52vh;min-height:360px;z-index:15;
+    border-bottom:1px solid var(--line);box-shadow:0 8px 20px rgba(21,36,54,.08)}
+  @media(max-width:980px){.map-col{position:relative;top:0;height:56vh;min-height:340px;z-index:auto}}
+  #map{width:100%;height:100%;background:var(--ivory-2)}
+  .map-fallback{width:100%;height:100%;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px;text-align:center;padding:40px;
+    color:var(--muted);background:var(--ivory-2);border-right:1px solid var(--line)}
+  .map-fallback .key{font-family:"IBM Plex Mono",monospace;font-size:12px;
+    background:var(--white);border:1px solid var(--line);padding:6px 10px;border-radius:6px}
+
+  /* ---------- Detail sheet (経路・周辺施設) ---------- */
+  .detail-sheet{position:absolute;left:0;right:0;bottom:0;background:var(--ivory);
+    border-top:1px solid var(--line);box-shadow:0 -8px 30px rgba(21,36,54,.18);
+    transform:translateY(105%);transition:.26s cubic-bezier(.4,0,.2,1);z-index:20;
+    max-height:min(78%,460px);display:flex;flex-direction:column}
+  .detail-sheet.open{transform:none}
+  .ds-head{background:var(--navy);color:var(--ivory);padding:12px 16px;display:flex;
+    align-items:center;justify-content:space-between;gap:12px}
+  .ds-head .ds-r{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;color:var(--accent-soft)}
+  .ds-head .ds-name{font-size:14px;font-weight:700;line-height:1.35;margin-top:2px}
+  .ds-x{background:none;border:none;color:var(--ivory);font-size:20px;cursor:pointer;opacity:.75;line-height:1}
+  .ds-x:hover{opacity:1}
+  .ds-body{padding:15px 16px 18px;overflow-y:auto}
+  .ds-sec{margin-bottom:17px}
+  .ds-sec:last-child{margin-bottom:0}
+  .ds-sec-t{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+  .dest-row{display:flex;gap:7px}
+  .dest-row input{flex:1;min-width:0;font-family:inherit;font-size:13px;padding:9px 11px;
+    border:1px solid var(--line);border-radius:4px;background:var(--white);color:var(--ink);transition:.15s}
+  .dest-row input:focus{outline:none;border-color:var(--accent)}
+  .dest-row button{white-space:nowrap;font-family:inherit;font-size:12px;padding:9px 15px;border-radius:4px;
+    border:none;background:var(--navy);color:var(--ivory);cursor:pointer;transition:.15s}
+  .dest-row button:hover{background:var(--navy-2)}
+  .mode-chips{display:flex;gap:6px;margin-top:9px}
+  .mode-chip{display:inline-flex;align-items:center;gap:5px;font-family:inherit;font-size:12px;
+    padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--white);
+    color:var(--ink);cursor:pointer;transition:.15s}
+  .mode-chip:hover{border-color:var(--accent)}
+  .mode-chip.active{background:var(--navy);color:var(--ivory);border-color:var(--navy)}
+  .commute-result{margin-top:12px}
+  .cr-main{display:flex;align-items:baseline;gap:10px}
+  .cr-time{font-family:"Cormorant Garamond",serif;font-size:30px;font-weight:600;color:var(--navy);line-height:1}
+  .cr-dist{font-size:13px;color:var(--muted)}
+  .cr-sub{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.55}
+  .cr-hint{font-size:12px;color:var(--muted)}
+  .cr-hint.err{color:#b3402f}
+  .fac-chips{display:flex;flex-wrap:wrap;gap:7px}
+  .fac-chip{display:inline-flex;align-items:center;gap:7px;font-family:inherit;font-size:12.5px;
+    padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--white);
+    color:var(--ink);cursor:pointer;transition:.15s}
+  .fac-chip:hover{border-color:var(--accent)}
+  .fac-chip.active{color:#fff}
+  .fac-chip .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .fac-chip .fc-n{font-family:"IBM Plex Mono",monospace;font-size:11px;opacity:.85}
+  .fac-note{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.6}
+
+  /* Cards（地図の下・全幅グリッドで比較しやすく） */
+  .cards-col{background:var(--ivory);position:relative;z-index:5}
+  .cards-head{padding:22px 0 12px;display:flex;align-items:baseline;justify-content:space-between}
+  .cards-head .t{font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);font-family:"IBM Plex Mono",monospace}
+  .cards-head .c{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--accent)}
+  .cards-col .wrap{padding-bottom:72px}
+
+  /* ---------- 物件一覧テーブル ---------- */
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;
+    background:var(--white);box-shadow:var(--shadow)}
+  .ptable{width:100%;border-collapse:collapse;font-size:13px;min-width:840px}
+  .ptable thead th{background:var(--navy);color:var(--ivory);font-weight:500;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;
+    text-align:left;padding:12px 12px;white-space:nowrap}
+  .ptable thead th.sortable{cursor:pointer;transition:.15s;user-select:none}
+  .ptable thead th.sortable:hover{color:var(--accent-soft)}
+  .ptable thead th .arw{opacity:.45;margin-left:5px;font-size:10px}
+  .ptable thead th.sorted{color:var(--accent-soft)}
+  .ptable thead th.sorted .arw{opacity:1}
+  .ptable tbody td{padding:12px;border-top:1px solid var(--ivory-2);vertical-align:middle}
+  .prow{transition:.14s;cursor:pointer;scroll-margin-top:calc(52vh + 150px)}
+  .prow:hover{background:var(--ivory)}
+  .prow.hl{background:#faf5e7;box-shadow:inset 3px 0 0 var(--accent)}
+  .prow.wished{background:rgba(47,107,79,.055);box-shadow:inset 3px 0 0 var(--go)}
+  .prow.wished.hl{box-shadow:inset 3px 0 0 var(--accent)}
+  .c-pin{width:46px;text-align:center}
+  .pin-cell{width:30px;height:30px;border-radius:50%;border:none;background:var(--navy);
+    color:var(--ivory);font-family:"Cormorant Garamond",serif;font-size:16px;font-weight:600;
+    cursor:pointer;transition:.15s}
+  .pin-cell:hover{background:var(--accent)}
+  .c-name{min-width:220px}
+  .pn-name{font-size:14px;font-weight:700;line-height:1.35;color:var(--ink)}
+  .pn-sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;
+    max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rt{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10px;
+    letter-spacing:.04em;color:var(--accent);border:1px solid var(--accent-soft);
+    padding:2px 7px;border-radius:999px;white-space:nowrap}
+  .c-price{font-family:"Cormorant Garamond",serif;font-size:19px;font-weight:600;
+    color:var(--navy);white-space:nowrap}
+  .c-price .yen{font-family:"Zen Kaku Gothic New",sans-serif;font-size:11px;font-weight:500;margin-left:1px}
+  .c-layout,.c-area,.c-floor,.c-year{white-space:nowrap;color:var(--ink)}
+  .c-mgmt{white-space:nowrap;color:var(--muted)}
+  .c-act{white-space:nowrap}
+  .row-acts{display:flex;gap:6px;align-items:center}
+  .ib{width:31px;height:31px;flex:none;display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid var(--line);background:var(--white);color:var(--ink);border-radius:5px;
+    cursor:pointer;transition:.15s;text-decoration:none}
+  .ib:hover{border-color:var(--accent);color:var(--accent)}
+  .ib.wish.on{background:var(--go);border-color:var(--go);color:#fff}
+  .ib.wish.on svg{fill:#fff}
+  .badge-new{vertical-align:middle}
+  @media(max-width:860px){
+    .ptable .c-mgmt,.ptable .c-year{display:none}
+  }
+
+  /* Wishlist drawer */
+  .drawer-scrim{position:fixed;inset:0;background:rgba(21,36,54,.4);opacity:0;
+    pointer-events:none;transition:.2s;z-index:50}
+  .drawer-scrim.open{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(400px,90vw);background:var(--ivory);
+    box-shadow:-8px 0 40px rgba(21,36,54,.2);transform:translateX(100%);transition:.24s cubic-bezier(.4,0,.2,1);
+    z-index:51;display:flex;flex-direction:column}
+  .drawer.open{transform:none}
+  .drawer-head{background:var(--navy);color:var(--ivory);padding:22px 24px;display:flex;
+    align-items:center;justify-content:space-between}
+  .drawer-head h2{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:24px}
+  .drawer-head .x{background:none;border:none;color:var(--ivory);font-size:22px;cursor:pointer;
+    opacity:.7;transition:.15s;line-height:1}
+  .drawer-head .x:hover{opacity:1}
+  .drawer-body{flex:1;overflow-y:auto;padding:18px 20px}
+  .wl-item{background:var(--white);border:1px solid var(--line);border-radius:4px;
+    padding:13px 15px;margin-bottom:12px}
+  .wl-item h4{font-size:14px;font-weight:700;margin-bottom:3px}
+  .wl-item .wl-price{font-family:"Cormorant Garamond",serif;font-size:18px;font-weight:600;color:var(--navy)}
+  .wl-item .wl-rm{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;
+    text-decoration:underline;padding:0;margin-top:6px}
+  .wl-item .wl-rm:hover{color:var(--go)}
+  .wl-empty{text-align:center;color:var(--muted);padding:50px 20px;font-size:14px;line-height:1.9}
+  .wl-empty .big{font-family:"Cormorant Garamond",serif;font-size:40px;color:var(--line);display:block;margin-bottom:8px}
+  .drawer-foot{padding:16px 20px;border-top:1px solid var(--line);background:var(--ivory-2)}
+  .drawer-foot .note{font-size:11px;color:var(--muted);line-height:1.7}
+
+  /* PDF modal */
+  .pdf-scrim{position:fixed;inset:0;background:rgba(21,36,54,.72);opacity:0;pointer-events:none;
+    transition:.2s;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
+  .pdf-scrim.open{opacity:1;pointer-events:auto}
+  .pdf-box{background:#fff;width:min(1100px,96vw);height:min(90vh,900px);border-radius:6px;
+    display:flex;flex-direction:column;overflow:hidden;transform:scale(.97);transition:.2s}
+  .pdf-scrim.open .pdf-box{transform:none}
+  .pdf-head{background:var(--navy);color:var(--ivory);padding:12px 18px;display:flex;
+    align-items:center;justify-content:space-between;gap:12px}
+  .pdf-head .name{font-size:14px;font-weight:500}
+  .pdf-head .acts{display:flex;gap:10px;align-items:center}
+  .pdf-head a,.pdf-head button{color:var(--ivory);font-size:12px;text-decoration:none;
+    background:rgba(255,255,255,.12);border:none;padding:6px 12px;border-radius:4px;cursor:pointer;
+    font-family:inherit;transition:.15s}
+  .pdf-head a:hover,.pdf-head button:hover{background:rgba(255,255,255,.24)}
+  .pdf-box iframe{flex:1;border:none;width:100%;background:#525659}
+
+  .hidden{display:none!important}
+
+  /* map info window */
+  .gm-iw{font-family:"Zen Kaku Gothic New",sans-serif;padding:4px 2px;max-width:210px}
+  .gm-iw .gm-r{font-family:"IBM Plex Mono",monospace;font-size:10px;color:#9a7b3f;letter-spacing:.06em}
+  .gm-iw h5{font-size:14px;margin:2px 0 4px;color:#152436}
+  .gm-iw .gm-p{font-family:"Cormorant Garamond",serif;font-size:20px;font-weight:600;color:#152436}
+  .gm-iw .gm-p span{font-family:sans-serif;font-size:11px}
+  .gm-iw button{margin-top:8px;background:#152436;color:#fff;border:none;padding:6px 12px;
+    border-radius:4px;font-size:12px;cursor:pointer;font-family:inherit;width:100%}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-inner">
+    <div class="brand">
+      <span class="logo">08 Equitas</span>
+      <span class="sub">Buyer-Aligned Advisory</span>
+    </div>
+    <div class="head-meta">
+      内見候補リスト<br><b id="dateStamp"></b>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Viewing Candidates</div>
+    <h1>Your shortlist, mapped.
+      <span class="ja">内見候補の物件を地図で見渡し、図面とマンションレビューで詳しく確認できます。<br>物件を選ぶと、勤務地・行き先までの経路や、周辺のコンビニ・病院なども地図で確認できます。</span>
+    </h1>
+  </div>
+</section>
+
+<div class="controls">
+  <div class="wrap controls-inner">
+    <div class="filter-group">
+      <span class="filter-label">提案回次</span>
+      <button class="chip active" data-round="all">すべて<span class="n" id="nAll"></span></button>
+      <button class="chip" data-round="1">第1回<span class="n" id="n1"></span></button>
+      <button class="chip" data-round="2">第2回<span class="n" id="n2"></span></button>
+      <button class="chip" data-round="3">第3回<span class="n" id="n3"></span></button>
+    </div>
+    <div class="spacer"></div>
+    <button class="add-btn" id="openAdd">＋ 物件を追加</button>
+    <button class="wishlist-btn" id="openWishlist">
+      内見希望リスト
+      <span class="count" id="wlCount">0</span>
+    </button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="map-col">
+    <div id="map"></div>
+    <div class="map-fallback hidden" id="mapFallback">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--navy)">地図を表示できません</div>
+      <div>Google Maps の API キーが未設定です。<br>下記の箇所にキーを差し込むと、全物件のピンが表示されます。</div>
+      <div class="key">index.html → YOUR_GOOGLE_MAPS_API_KEY</div>
+    </div>
+
+    <!-- 経路・周辺施設 パネル -->
+    <div class="detail-sheet" id="detailSheet" aria-label="経路・周辺施設">
+      <div class="ds-head">
+        <div>
+          <div class="ds-r" id="dsRound"></div>
+          <div class="ds-name" id="dsName"></div>
+        </div>
+        <button class="ds-x" id="dsClose" aria-label="閉じる">✕</button>
+      </div>
+      <div class="ds-body">
+        <div class="ds-sec">
+          <div class="ds-sec-t">勤務地・行き先までの経路</div>
+          <div class="dest-row">
+            <input type="text" id="destInput" placeholder="例：東京駅／丸の内2-4-1 など目的地を入力">
+            <button id="destBtn">検索</button>
+          </div>
+          <div class="mode-chips">
+            <button class="mode-chip active" data-mode="TRANSIT">🚃 電車</button>
+            <button class="mode-chip" data-mode="DRIVING">🚗 車</button>
+            <button class="mode-chip" data-mode="WALKING">🚶 徒歩</button>
+          </div>
+          <div class="commute-result" id="commuteResult"></div>
+        </div>
+
+        <div class="ds-sec">
+          <div class="ds-sec-t">周辺施設（半径800m）</div>
+          <div class="fac-chips" id="facChips"></div>
+          <div class="fac-note" id="facNote">気になるカテゴリを選ぶと、地図にピンが表示されます。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards-col">
+    <div class="wrap">
+      <div class="cards-head">
+        <span class="t">Properties</span>
+        <span class="c" id="visibleCount"></span>
+      </div>
+      <div class="table-wrap">
+        <table class="ptable">
+          <thead>
+            <tr>
+              <th class="c-pin">#</th>
+              <th class="c-name">物件名</th>
+              <th class="c-round">提案</th>
+              <th class="c-price sortable" data-sort="price">価格<span class="arw">↕</span></th>
+              <th class="c-layout">間取り</th>
+              <th class="c-area sortable" data-sort="area">専有面積<span class="arw">↕</span></th>
+              <th class="c-floor">階数</th>
+              <th class="c-year sortable" data-sort="year">築年月<span class="arw">↕</span></th>
+              <th class="c-mgmt">管理費等</th>
+              <th class="c-act">操作</th>
+            </tr>
+          </thead>
+          <tbody id="cards"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Wishlist drawer -->
+<div class="drawer-scrim" id="drawerScrim"></div>
+<aside class="drawer" id="drawer" aria-label="内見希望リスト">
+  <div class="drawer-head">
+    <h2>内見に行きたい</h2>
+    <button class="x" id="closeWishlist" aria-label="閉じる">✕</button>
+  </div>
+  <div class="drawer-body" id="wlBody"></div>
+  <div class="drawer-foot">
+    <div class="note">このリストは担当エージェントと共有する内見希望の控えです。<br>ページを閉じると保存されないため、確定後はエージェントへお伝えください。</div>
+  </div>
+</aside>
+
+<!-- PDF modal -->
+<div class="pdf-scrim" id="pdfScrim">
+  <div class="pdf-box">
+    <div class="pdf-head">
+      <span class="name" id="pdfName">図面</span>
+      <div class="acts">
+        <a id="pdfOpen" href="#" target="_blank" rel="noopener">新しいタブで開く ↗</a>
+        <button id="pdfClose">閉じる ✕</button>
+      </div>
+    </div>
+    <iframe id="pdfFrame" title="物件図面"></iframe>
+  </div>
+</div>
+
+<!-- Add-property modal -->
+<div class="add-scrim" id="addScrim">
+  <div class="add-box">
+    <div class="add-head">
+      <div>
+        <h2>物件を追加</h2>
+        <div class="sub">Add a candidate property</div>
+      </div>
+      <button class="x" id="addClose" aria-label="閉じる">✕</button>
+    </div>
+    <div class="add-body">
+      <div class="dropzone" id="dropzone">
+        <div class="dz-ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m0 0 4 4m-4-4L8 8"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></div>
+        <div class="dz-t" id="dzText">図面PDFをドラッグ＆ドロップ</div>
+        <div class="dz-s" id="dzSub">またはクリックして選択（PDF）</div>
+        <input type="file" id="fileInput" accept="application/pdf" hidden>
+      </div>
+
+      <div class="form-grid">
+        <div class="field full">
+          <label>物件名 <span class="req">*</span></label>
+          <input type="text" id="f_name" placeholder="例：シティタワー高輪">
+        </div>
+        <div class="field">
+          <label>部屋・階など</label>
+          <input type="text" id="f_unit" placeholder="例：1701号室 / 20階 南向き">
+        </div>
+        <div class="field">
+          <label>提案回次 <span class="req">*</span></label>
+          <select id="f_round">
+            <option value="1">第1回</option>
+            <option value="2" selected>第2回</option>
+            <option value="3">第3回</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>価格（表示）<span class="req">*</span></label>
+          <input type="text" id="f_price" placeholder="例：1億2,800万円">
+        </div>
+        <div class="field">
+          <label>専有面積・間取り</label>
+          <input type="text" id="f_area" placeholder="例：55.20㎡ / 1LDK">
+        </div>
+        <div class="field full">
+          <label>交通・アクセス</label>
+          <input type="text" id="f_access" placeholder="例：都営浅草線「高輪台」駅 徒歩5分">
+        </div>
+        <div class="field">
+          <label>築年月</label>
+          <input type="text" id="f_year" placeholder="例：2019年3月">
+        </div>
+        <div class="field">
+          <label>階数</label>
+          <input type="text" id="f_floors" placeholder="例：17階 / 40階建">
+        </div>
+        <div class="field">
+          <label>管理費等</label>
+          <input type="text" id="f_mgmt" placeholder="例：月額28,000円">
+        </div>
+        <div class="field">
+          <label>マンションレビューURL</label>
+          <input type="text" id="f_review" placeholder="空欄なら物件名で自動検索リンク">
+        </div>
+        <div class="field full">
+          <label>住所 <span class="req">*</span></label>
+          <input type="text" id="f_addr" placeholder="例：東京都港区高輪3丁目">
+        </div>
+        <div class="field full">
+          <div class="geo-row">
+            <div class="field">
+              <label>緯度 lat</label>
+              <input type="text" id="f_lat" placeholder="35.6300">
+            </div>
+            <div class="field">
+              <label>経度 lng</label>
+              <input type="text" id="f_lng" placeholder="139.7400">
+            </div>
+            <button class="geo-btn" id="geoBtn">住所からピンを取得</button>
+          </div>
+          <div class="hint" style="margin-top:6px">
+            「住所からピンを取得」で自動入力できます。うまくいかない場合は
+            <a href="https://www.google.com/maps" target="_blank" rel="noopener">Googleマップ</a>で住所を右クリックし、表示される数値を貼り付けてください。
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="add-foot">
+      <span class="msg" id="addMsg"></span>
+      <button class="btn-secondary" id="addCancel">キャンセル</button>
+      <button class="btn-primary" id="addSubmit">この物件を追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- Unsaved changes bar -->
+<div class="save-bar" id="saveBar">
+  <span class="sb-txt"><b id="sbCount">0</b> 件の物件を追加しました。反映するには更新版HTMLを書き出してください。</span>
+  <button id="exportBtn">更新版HTMLを書き出す</button>
+  <button class="sb-dismiss" id="sbDismiss">閉じる</button>
+</div>
+
+<script>
+/* ============================================================
+   物件データ
+   - figure : 図面PDF（同梱）
+   - review : マンションレビューの物件詳細ページURL
+              ※正式URLが分かれば直接リンクに差し替え可。
+                未確定のものは物件名検索URLを設定しています。
+   - round  : 提案回次（1/2/3）
+   ============================================================ */
+const PROPERTIES = [
+  {
+    id:"midtower",
+    name:"MID TOWER GRAND",
+    unit:"20階 北東向き",
+    round:2,
+    price:"1億980万円",
+    priceNum:10980,
+    addr:"東京都中央区月島1丁目",
+    lat:35.6642, lng:139.7833,
+    access:"東京メトロ有楽町線・都営大江戸線「月島」駅 徒歩2分",
+    area:"42.05㎡ / 1LDK",
+    year:"2020年10月",
+    floors:"20階／32階建",
+    mgmt:"月額21,640円",
+    figure:"figures/midtower_grand.pdf",
+    review:"https://www.mansion-review.jp/mansion/search/?keyword=MID%20TOWER%20GRAND"
+  },
+  {
+    id:"citytowers_toyosu",
+    name:"シティタワーズ豊洲 ザ・ツイン サウスタワー",
+    unit:"3515号室",
+    round:1,
+    price:"9,999万円",
+    priceNum:9999,
+    addr:"東京都江東区豊洲3丁目4番1号",
+    lat:35.6553, lng:139.7963,
+    access:"東京メトロ有楽町線「豊洲」駅 徒歩5分",
+    area:"52.50㎡ / 1LDK+WIC",
+    year:"2009年2月",
+    floors:"35階／48階建",
+    mgmt:"月額34,970円",
+    figure:"figures/citytowers_toyosu_south.pdf",
+    review:"https://www.mansion-review.jp/mansion/search/?keyword=%E3%82%B7%E3%83%86%E3%82%A3%E3%82%BF%E3%83%AF%E3%83%BC%E3%82%BA%E8%B1%8A%E6%B4%B2%E3%82%B6%E3%83%84%E3%82%A4%E3%83%B3"
+  },
+  {
+    id:"worldcity_capital",
+    name:"ワールドシティタワーズ キャピタルタワー",
+    unit:"1LDK+WIC",
+    round:1,
+    price:"7,980万円",
+    priceNum:7980,
+    addr:"東京都港区港南4丁目6-7",
+    lat:35.6248, lng:139.7466,
+    access:"山手線「品川」駅 徒歩14分／東京モノレール「天王洲アイル」駅 徒歩6分",
+    area:"45.28㎡ / 1LDK",
+    year:"2006年10月",
+    floors:"42階建 5階部分",
+    mgmt:"月額34,628円",
+    figure:"figures/worldcity_capital.pdf",
+    review:"https://www.mansion-review.jp/mansion/search/?keyword=%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%82%B7%E3%83%86%E3%82%A3%E3%82%BF%E3%83%AF%E3%83%BC%E3%82%BA%E3%82%AD%E3%83%A3%E3%83%94%E3%82%BF%E3%83%AB"
+  },
+  {
+    id:"worldcity_aqua",
+    name:"ワールドシティタワーズ アクアタワー",
+    unit:"38階 西向き",
+    round:3,
+    price:"1億480万円",
+    priceNum:10480,
+    addr:"東京都港区港南4丁目",
+    lat:35.6240, lng:139.7472,
+    access:"JR山手線「品川」駅 徒歩15分／東京モノレール「天王洲アイル」駅 徒歩5分",
+    area:"50.07㎡ / 1LDK",
+    year:"2005年10月",
+    floors:"38階／40階建",
+    mgmt:"月額38,168円",
+    figure:"figures/worldcity_aqua.pdf",
+    review:"https://www.mansion-review.jp/mansion/search/?keyword=%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%82%B7%E3%83%86%E3%82%A3%E3%82%BF%E3%83%AF%E3%83%BC%E3%82%BA%E3%82%A2%E3%82%AF%E3%82%A2%E3%82%BF%E3%83%AF%E3%83%BC"
+  }
+];
+
+/* 周辺施設カテゴリ（Google Places のタイプ） */
+const FACILITIES = [
+  {key:"convenience_store", label:"コンビニ",       color:"#e0873a"},
+  {key:"post_office",       label:"郵便局",         color:"#c94b4b"},
+  {key:"hospital",          label:"病院",           color:"#3f7fbf"},
+  {key:"pharmacy",          label:"ドラッグストア", color:"#4f9a5e"},
+  {key:"supermarket",       label:"スーパー",       color:"#8a63b8"}
+];
+
+/* ====== state ====== */
+let currentRound = "all";
+const wishlist = new Set();
+let markers = {}, infoWindow = null, gmap = null;
+
+/* 経路・周辺施設 用 */
+let selectedId = null;
+let directionsService = null, directionsRenderer = null, placesService = null, facInfo = null;
+let travelMode = "TRANSIT";
+const activeFac = new Set();
+const facMarkers = {};   // key -> [markers]
+
+const $ = id => document.getElementById(id);
+
+/* ====== date stamp ====== */
+$("dateStamp").textContent =
+  new Intl.DateTimeFormat("ja-JP",{year:"numeric",month:"long",day:"numeric"}).format(new Date());
+
+/* ====== counts ====== */
+function roundCount(r){ return PROPERTIES.filter(p=>String(p.round)===String(r)).length; }
+$("nAll").textContent = PROPERTIES.length;
+$("n1").textContent = roundCount(1);
+$("n2").textContent = roundCount(2);
+$("n3").textContent = roundCount(3);
+
+/* ====== icons ====== */
+const icPin = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>';
+const icDoc = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+const icRev = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2 9.2 8.6 2 9.2l5.5 4.6L5.8 22 12 18l6.2 4-1.7-8.2L22 9.2l-7.2-.6z"/></svg>';
+const icGo  = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-7.6-7-12A7 7 0 0 1 19 9c0 4.4-7 12-7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>';
+const icRoute = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2.4"/><circle cx="18" cy="5" r="2.4"/><path d="M8.4 18.5h6.1a3 3 0 0 0 0-6H9.5a3 3 0 0 1 0-6h6.1"/></svg>';
+const icHeart = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20s-6.6-4.5-9.2-8.2C1.1 9.3 2 5.8 5 4.9 7.1 4.3 9.1 5.2 10 6.8c.9-1.6 2.9-2.5 5-1.9 3 .9 3.9 4.4 2.2 6.9C18.6 15.5 12 20 12 20z"/></svg>';
+
+/* ====== 一覧テーブルの並べ替え ====== */
+let sortKey = null, sortDir = 1;   // dir: 1=昇順, -1=降順
+function sortValue(p, key){
+  if(key==="price") return p.priceNum || 0;
+  if(key==="area")  return parseFloat((p.area||"").replace(/[^0-9.]/g,"")) || 0;
+  if(key==="year")  return parseInt((p.year||"").replace(/[^0-9]/g,"")) || 0;
+  return 0;
+}
+function updateSortIndicators(){
+  document.querySelectorAll(".ptable th.sortable").forEach(th=>{
+    const on = th.dataset.sort===sortKey;
+    th.classList.toggle("sorted", on);
+    const arw = th.querySelector(".arw");
+    if(arw) arw.textContent = on ? (sortDir>0 ? "▲" : "▼") : "↕";
+  });
+}
+document.querySelectorAll(".ptable th.sortable").forEach(th=>{
+  th.onclick = ()=>{
+    const k = th.dataset.sort;
+    if(sortKey===k){ sortDir *= -1; } else { sortKey = k; sortDir = 1; }
+    renderCards();
+  };
+});
+
+/* ====== render list (一覧表) ====== */
+function renderCards(){
+  const box = $("cards");   // <tbody>
+  box.innerHTML = "";
+  let list = PROPERTIES.filter(p=> currentRound==="all" || String(p.round)===String(currentRound));
+  if(sortKey){
+    list = [...list].sort((a,b)=> (sortValue(a,sortKey)-sortValue(b,sortKey))*sortDir);
+  }
+  list.forEach((p)=>{
+    const idx = PROPERTIES.indexOf(p)+1;
+    const wished = wishlist.has(p.id);
+    const parts = (p.area||"").split("/");
+    const areaVal   = (parts[0]||"").trim() || "—";
+    const layoutVal = (parts[1]||"").trim() || (parts.length>1 ? "—" : "—");
+    const sub = [p.unit, p.access].filter(Boolean).join(" ・ ");
+    const tr = document.createElement("tr");
+    tr.className = "prow"+(wished?" wished":"");
+    tr.id = "card-"+p.id;
+    tr.innerHTML = `
+      <td class="c-pin"><button class="pin-cell" data-focus="${p.id}" title="地図で表示">${idx}</button></td>
+      <td class="c-name">
+        <div class="pn-name">${p.name}${p.isNew?' <span class="badge-new">追加</span>':''}</div>
+        ${sub?`<div class="pn-sub" title="${sub}">${sub}</div>`:''}
+      </td>
+      <td class="c-round"><span class="rt">第${p.round}回</span></td>
+      <td class="c-price">${p.price.replace(/(億|万円)/g,'<span class="yen">$1</span>')}</td>
+      <td class="c-layout">${layoutVal}</td>
+      <td class="c-area">${areaVal}</td>
+      <td class="c-floor">${p.floors||"—"}</td>
+      <td class="c-year">${p.year||"—"}</td>
+      <td class="c-mgmt">${p.mgmt||"—"}</td>
+      <td class="c-act"><div class="row-acts">
+        ${p.figure?`<a class="ib" href="#" data-fig="${p.id}" title="図面を見る" aria-label="図面を見る">${icDoc}</a>`:''}
+        <a class="ib" href="${p.review}" target="_blank" rel="noopener" title="マンションレビュー" aria-label="マンションレビュー">${icRev}</a>
+        <button class="ib" data-detail="${p.id}" title="経路・周辺施設" aria-label="経路・周辺施設">${icRoute}</button>
+        <button class="ib wish${wished?' on':''}" data-go="${p.id}" title="${wished?'内見希望リストに追加済み':'内見に行きたい'}" aria-label="内見に行きたい">${icHeart}</button>
+      </div></td>`;
+    tr.addEventListener("click",(e)=>{ if(!e.target.closest("button,a")) selectProperty(p.id); });
+    box.appendChild(tr);
+  });
+  $("visibleCount").textContent = `${list.length} 件`;
+  bindCardEvents();
+  updateSortIndicators();
+}
+
+/* ====== card events ====== */
+function bindCardEvents(){
+  document.querySelectorAll("[data-focus]").forEach(b=>{
+    b.onclick=()=>selectProperty(b.dataset.focus);
+  });
+  document.querySelectorAll("[data-detail]").forEach(b=>{
+    b.onclick=()=>selectProperty(b.dataset.detail);
+  });
+  document.querySelectorAll("[data-fig]").forEach(a=>{
+    a.onclick=(e)=>{e.preventDefault();openPdf(a.dataset.fig);};
+  });
+  document.querySelectorAll("[data-go]").forEach(b=>{
+    b.onclick=()=>toggleWish(b.dataset.go);
+  });
+}
+
+/* ====== round filter ====== */
+document.querySelectorAll(".chip").forEach(c=>{
+  c.onclick=()=>{
+    document.querySelectorAll(".chip").forEach(x=>x.classList.remove("active"));
+    c.classList.add("active");
+    currentRound = c.dataset.round;
+    renderCards();
+    updateMarkerVisibility();
+  };
+});
+
+/* ====== wishlist ====== */
+function toggleWish(id){
+  if(wishlist.has(id)) wishlist.delete(id); else wishlist.add(id);
+  $("wlCount").textContent = wishlist.size;
+  renderCards();
+  renderWishlist();
+}
+function renderWishlist(){
+  const body = $("wlBody");
+  if(wishlist.size===0){
+    body.innerHTML = `<div class="wl-empty"><span class="big">♡</span>まだ物件が追加されていません。<br>各物件の「内見に行きたい」を押すと<br>ここに残ります。</div>`;
+    return;
+  }
+  body.innerHTML = "";
+  PROPERTIES.filter(p=>wishlist.has(p.id)).forEach(p=>{
+    const d=document.createElement("div");
+    d.className="wl-item";
+    d.innerHTML=`<h4>${p.name} <span style="font-weight:400;color:var(--muted);font-size:12px">${p.unit}</span></h4>
+      <div class="wl-price">${p.price}</div>
+      <button class="wl-rm" data-rm="${p.id}">リストから外す</button>`;
+    body.appendChild(d);
+  });
+  body.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>toggleWish(b.dataset.rm));
+}
+$("openWishlist").onclick=()=>{
+  $("drawer").classList.add("open");
+  $("drawerScrim").classList.add("open");
+};
+function closeDrawer(){
+  $("drawer").classList.remove("open");
+  $("drawerScrim").classList.remove("open");
+}
+$("closeWishlist").onclick=closeDrawer;
+$("drawerScrim").onclick=closeDrawer;
+
+/* ====== PDF modal ====== */
+function openPdf(id){
+  const p = PROPERTIES.find(x=>x.id===id);
+  $("pdfName").textContent = `${p.name} ${p.unit} — 図面`;
+  $("pdfFrame").src = p.figure;
+  $("pdfOpen").href = p.figure;
+  $("pdfScrim").classList.add("open");
+}
+function closePdf(){
+  $("pdfScrim").classList.remove("open");
+  $("pdfFrame").src = "";
+}
+$("pdfClose").onclick=closePdf;
+$("pdfScrim").onclick=(e)=>{if(e.target.id==="pdfScrim")closePdf();};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closePdf();closeDrawer();closeDetail();}});
+
+/* ====== Google Maps: markers / info ====== */
+function openInfo(p){
+  if(!infoWindow) return;
+  const idx = PROPERTIES.indexOf(p)+1;
+  infoWindow.setContent(`<div class="gm-iw">
+    <div class="gm-r">第${p.round}回提案 ・ ${idx}</div>
+    <h5>${p.name}</h5>
+    <div style="font-size:11px;color:#6b6558;margin-bottom:2px">${p.unit} / ${p.area}</div>
+    <div class="gm-p">${p.price}</div>
+    <button onclick="selectFromMap('${p.id}')">経路・周辺を調べる</button>
+    <button onclick="focusCardFromMap('${p.id}')" style="margin-top:6px;background:#9a7b3f">カードを見る</button>
+  </div>`);
+  infoWindow.open(gmap, markers[p.id]);
+}
+window.focusCardFromMap=(id)=>{
+  const card=document.getElementById("card-"+id);
+  if(card){
+    document.querySelectorAll(".prow").forEach(c=>c.classList.remove("hl"));
+    card.classList.add("hl");
+    card.scrollIntoView({behavior:"smooth",block:"nearest"});
+    setTimeout(()=>card.classList.remove("hl"),1800);
+  }
+};
+window.selectFromMap=(id)=>selectProperty(id);
+
+function updateMarkerVisibility(){
+  PROPERTIES.forEach(p=>{
+    if(markers[p.id]){
+      const show = currentRound==="all" || String(p.round)===String(currentRound);
+      markers[p.id].setMap(show?gmap:null);
+    }
+  });
+}
+window.initMap = function(){
+  const center = {lat:35.6435, lng:139.775};
+  gmap = new google.maps.Map($("map"),{
+    center, zoom:13, mapTypeControl:false, streetViewControl:false, fullscreenControl:false,
+    styles:[
+      {elementType:"geometry",stylers:[{color:"#eae6dc"}]},
+      {elementType:"labels.text.fill",stylers:[{color:"#6b6558"}]},
+      {elementType:"labels.text.stroke",stylers:[{color:"#f6f3ec"}]},
+      {featureType:"water",elementType:"geometry",stylers:[{color:"#c3d0d6"}]},
+      {featureType:"road",elementType:"geometry",stylers:[{color:"#f6f3ec"}]},
+      {featureType:"poi",elementType:"geometry",stylers:[{color:"#e2ddd0"}]},
+      {featureType:"poi.park",elementType:"geometry",stylers:[{color:"#d3d9c4"}]},
+      {featureType:"transit",elementType:"geometry",stylers:[{color:"#d8d0c0"}]}
+    ]
+  });
+  infoWindow = new google.maps.InfoWindow();
+  facInfo   = new google.maps.InfoWindow();
+
+  // 経路描画・周辺検索サービス
+  directionsService = new google.maps.DirectionsService();
+  directionsRenderer = new google.maps.DirectionsRenderer({
+    suppressMarkers:false, preserveViewport:false,
+    polylineOptions:{strokeColor:"#152436", strokeOpacity:.85, strokeWeight:5}
+  });
+  if(google.maps.places){
+    placesService = new google.maps.places.PlacesService(gmap);
+  }
+
+  PROPERTIES.forEach((p,i)=>{
+    const marker = new google.maps.Marker({
+      position:{lat:p.lat,lng:p.lng}, map:gmap, title:p.name,
+      label:{text:String(i+1),color:"#f6f3ec",fontFamily:"IBM Plex Mono",fontSize:"12px",fontWeight:"600"},
+      icon:{
+        path:"M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z",
+        fillColor:"#152436", fillOpacity:1, strokeColor:"#9a7b3f", strokeWeight:1.5,
+        scale:1.7, anchor:new google.maps.Point(12,22), labelOrigin:new google.maps.Point(12,9)
+      },
+      zIndex:20
+    });
+    marker.addListener("click",()=>openInfo(p));
+    markers[p.id]=marker;
+  });
+};
+window.gm_authFailure = function(){
+  $("map").classList.add("hidden");
+  $("mapFallback").classList.remove("hidden");
+};
+
+/* ============================================================
+   物件を選択 → 経路・周辺施設パネルを開く
+   ============================================================ */
+function selectProperty(id){
+  const p = PROPERTIES.find(x=>x.id===id);
+  if(!p) return;
+  selectedId = id;
+
+  // 行をハイライト（地図はsticky表示のため行へのスクロールはしない）
+  const card = document.getElementById("card-"+id);
+  if(card){
+    document.querySelectorAll(".prow").forEach(c=>c.classList.remove("hl"));
+    card.classList.add("hl");
+    setTimeout(()=>card.classList.remove("hl"),1800);
+  }
+  // 地図を上部に表示（下までスクロールしている場合は地図を見えるところへ）
+  const mapCol = document.querySelector(".map-col");
+  if(mapCol && window.innerWidth <= 980){
+    mapCol.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  // 地図を寄せる
+  if(gmap && markers[id]){
+    gmap.panTo({lat:p.lat,lng:p.lng});
+    if(gmap.getZoom() < 15) gmap.setZoom(15);
+    if(infoWindow) infoWindow.close();
+  }
+  // 前の物件の表示をクリア
+  clearFacilities();
+  clearRoute();
+  buildFacChips();
+  $("facNote").style.color = "";
+  $("facNote").textContent = "気になるカテゴリを選ぶと、地図にピンが表示されます。";
+
+  const idx = PROPERTIES.indexOf(p)+1;
+  $("dsRound").textContent = `第${p.round}回提案 ・ 物件 ${idx}`;
+  $("dsName").textContent = `${p.name}${p.unit?" ／ "+p.unit:""}`;
+
+  openDetail();
+
+  // 目的地が入力済みなら自動で再計算
+  if($("destInput").value.trim()) computeRoute();
+}
+function openDetail(){ $("detailSheet").classList.add("open"); }
+function closeDetail(){
+  $("detailSheet").classList.remove("open");
+  clearFacilities();
+  clearRoute();
+  selectedId = null;
+}
+$("dsClose").onclick = closeDetail;
+
+/* ---- 経路（距離・所要時間）---- */
+$("destBtn").onclick = computeRoute;
+$("destInput").addEventListener("keydown", e=>{ if(e.key==="Enter") computeRoute(); });
+document.querySelectorAll(".mode-chip").forEach(c=>{
+  c.onclick=()=>{
+    document.querySelectorAll(".mode-chip").forEach(x=>x.classList.remove("active"));
+    c.classList.add("active");
+    travelMode = c.dataset.mode;
+    if($("destInput").value.trim()) computeRoute();
+  };
+});
+
+function clearRoute(){
+  if(directionsRenderer) directionsRenderer.setMap(null);
+}
+function computeRoute(){
+  const p = PROPERTIES.find(x=>x.id===selectedId);
+  const dest = $("destInput").value.trim();
+  if(!p) return;
+  if(!dest){ $("commuteResult").innerHTML = `<div class="cr-hint">目的地を入力してください。</div>`; return; }
+  if(!directionsService){ $("commuteResult").innerHTML = `<div class="cr-hint err">地図が読み込まれていません。</div>`; return; }
+
+  $("commuteResult").innerHTML = `<div class="cr-hint">経路を計算中…</div>`;
+  const req = {
+    origin:{lat:p.lat, lng:p.lng},
+    destination: dest,
+    travelMode: google.maps.TravelMode[travelMode],
+    region:"jp"
+  };
+  if(travelMode==="TRANSIT"){ req.transitOptions = { departureTime: new Date() }; }
+
+  directionsService.route(req, (res, status)=>{
+    if(status==="OK" && res.routes[0]){
+      directionsRenderer.setMap(gmap);
+      directionsRenderer.setDirections(res);
+      const leg = res.routes[0].legs[0];
+      const clean = s => (s||"").replace(/^日本、?/,"").replace(/〒\d{3}-?\d{4}\s?/,"");
+      $("commuteResult").innerHTML = `
+        <div class="cr-main">
+          <span class="cr-time">${leg.duration.text}</span>
+          <span class="cr-dist">道のり ${leg.distance.text}</span>
+        </div>
+        <div class="cr-sub">${clean(leg.start_address)} → ${clean(leg.end_address)}</div>`;
+    } else if(status==="ZERO_RESULTS"){
+      $("commuteResult").innerHTML = `<div class="cr-hint err">この移動手段では経路が見つかりませんでした。別の手段をお試しください。</div>`;
+    } else if(status==="REQUEST_DENIED"){
+      $("commuteResult").innerHTML = `<div class="cr-hint err">経路検索には Google Cloud で Directions API の有効化が必要です。</div>`;
+    } else {
+      $("commuteResult").innerHTML = `<div class="cr-hint err">経路を取得できませんでした。目的地を具体的に入力してください。（${status}）</div>`;
+    }
+  });
+}
+
+/* ---- 周辺施設 ---- */
+function buildFacChips(){
+  const box = $("facChips");
+  box.innerHTML = "";
+  FACILITIES.forEach(f=>{
+    const b = document.createElement("button");
+    b.className = "fac-chip";
+    b.dataset.fac = f.key;
+    b.innerHTML = `<span class="dot" style="background:${f.color}"></span>${f.label}<span class="fc-n"></span>`;
+    b.onclick = ()=>toggleFacility(f.key);
+    box.appendChild(b);
+  });
+}
+function updateFacChip(key, count){
+  const f = FACILITIES.find(x=>x.key===key);
+  const chip = document.querySelector(`.fac-chip[data-fac="${key}"]`);
+  if(!chip) return;
+  const n = chip.querySelector(".fc-n");
+  const dot = chip.querySelector(".dot");
+  if(activeFac.has(key)){
+    chip.classList.add("active");
+    chip.style.background = f.color;
+    chip.style.borderColor = f.color;
+    dot.style.background = "#fff";
+    n.textContent = (count==null) ? "" : (count==="…" ? " …" : " "+count);
+  } else {
+    chip.classList.remove("active");
+    chip.style.background = "";
+    chip.style.borderColor = "";
+    dot.style.background = f.color;
+    n.textContent = "";
+  }
+}
+function removeFacMarkers(key){
+  (facMarkers[key]||[]).forEach(m=>m.setMap(null));
+  facMarkers[key] = [];
+}
+function clearFacilities(){
+  Object.keys(facMarkers).forEach(removeFacMarkers);
+  activeFac.clear();
+  if(facInfo) facInfo.close();
+}
+function placeFacMarkers(key, results){
+  const f = FACILITIES.find(x=>x.key===key);
+  removeFacMarkers(key);
+  facMarkers[key] = results.map(r=>{
+    const m = new google.maps.Marker({
+      position:r.geometry.location, map:gmap, title:r.name,
+      icon:{ path:google.maps.SymbolPath.CIRCLE, scale:6.5,
+        fillColor:f.color, fillOpacity:1, strokeColor:"#ffffff", strokeWeight:1.5 },
+      zIndex:8
+    });
+    m.addListener("click",()=>{
+      facInfo.setContent(`<div class="gm-iw">
+        <div class="gm-r" style="color:${f.color}">${f.label}</div>
+        <h5 style="margin-bottom:2px">${r.name}</h5>
+        <div style="font-size:11px;color:#6b6558">${r.vicinity||""}</div>
+        ${r.rating?`<div style="font-size:12px;color:#9a7b3f;margin-top:4px">★ ${r.rating}${r.user_ratings_total?`（${r.user_ratings_total}）`:""}</div>`:""}
+      </div>`);
+      facInfo.open(gmap, m);
+    });
+    return m;
+  });
+}
+function toggleFacility(key){
+  const p = PROPERTIES.find(x=>x.id===selectedId);
+  if(!p) return;
+  if(!placesService){
+    $("facNote").style.color = "#b3402f";
+    $("facNote").textContent = "周辺施設の検索には Places ライブラリの読み込みが必要です。";
+    return;
+  }
+  if(activeFac.has(key)){
+    activeFac.delete(key);
+    removeFacMarkers(key);
+    updateFacChip(key, null);
+    return;
+  }
+  activeFac.add(key);
+  updateFacChip(key, "…");
+  placesService.nearbySearch(
+    { location:{lat:p.lat, lng:p.lng}, radius:800, type:key },
+    (results, status)=>{
+      if(status===google.maps.places.PlacesServiceStatus.OK && results){
+        placeFacMarkers(key, results);
+        updateFacChip(key, results.length);
+      } else if(status===google.maps.places.PlacesServiceStatus.ZERO_RESULTS){
+        updateFacChip(key, 0);
+      } else {
+        updateFacChip(key, 0);
+        if(status==="REQUEST_DENIED"){
+          $("facNote").style.color = "#b3402f";
+          $("facNote").textContent = "周辺施設の取得には Google Cloud で Places API の有効化が必要です。";
+        }
+      }
+    }
+  );
+}
+
+/* ============================================================
+   物件追加（サイト上でPDFをアップロードして追加）
+   - 追加した物件はブラウザ内に保持され、カード・地図に即反映
+   - 「更新版HTMLを書き出す」で、追加分を含んだindex.htmlを保存
+     → Netlifyに再デプロイすれば全員に反映
+   - 図面PDFはHTML内にデータとして埋め込まれるため、
+     figures/ に別途置く必要はありません
+   ============================================================ */
+const addedProps = [];      // このセッションで追加した物件
+let pendingPdf = null;      // {dataUrl, filename}
+
+/* ---- modal open/close ---- */
+function openAdd(){ $("addScrim").classList.add("open"); }
+function closeAdd(){ $("addScrim").classList.remove("open"); }
+$("openAdd").onclick = openAdd;
+$("addClose").onclick = closeAdd;
+$("addCancel").onclick = closeAdd;
+$("addScrim").onclick = e => { if(e.target.id==="addScrim") closeAdd(); };
+
+/* ---- dropzone ---- */
+const dz = $("dropzone"), fileInput = $("fileInput");
+dz.onclick = () => fileInput.click();
+dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("drag"); });
+dz.addEventListener("dragleave", () => dz.classList.remove("drag"));
+dz.addEventListener("drop", e => {
+  e.preventDefault(); dz.classList.remove("drag");
+  if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.onchange = () => { if(fileInput.files[0]) handleFile(fileInput.files[0]); };
+
+function handleFile(file){
+  if(file.type !== "application/pdf"){ setMsg("PDFファイルを選んでください。","err"); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingPdf = { dataUrl: reader.result, filename: file.name };
+    dz.classList.add("has-file");
+    $("dzText").textContent = file.name;
+    $("dzSub").textContent = "別のPDFに変えるにはもう一度クリック";
+    setMsg("");
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ---- geocode via Google Maps (uses same key) ---- */
+$("geoBtn").onclick = () => {
+  const addr = $("f_addr").value.trim();
+  if(!addr){ setMsg("先に住所を入力してください。","err"); return; }
+  if(!(window.google && google.maps && google.maps.Geocoder)){
+    setMsg("地図が読み込まれていないため自動取得できません。手動で入力してください。","err"); return;
+  }
+  setMsg("住所からピンを取得中…");
+  new google.maps.Geocoder().geocode({ address: addr, region:"jp" }, (res, status) => {
+    if(status==="OK" && res[0]){
+      const loc = res[0].geometry.location;
+      $("f_lat").value = loc.lat().toFixed(5);
+      $("f_lng").value = loc.lng().toFixed(5);
+      setMsg("ピンを取得しました。","ok");
+    } else {
+      setMsg("取得できませんでした。Googleマップで座標を調べて入力してください。","err");
+    }
+  });
+};
+
+/* ---- submit new property ---- */
+$("addSubmit").onclick = () => {
+  const name = $("f_name").value.trim();
+  const price = $("f_price").value.trim();
+  const addr = $("f_addr").value.trim();
+  const lat = parseFloat($("f_lat").value);
+  const lng = parseFloat($("f_lng").value);
+  const round = $("f_round").value;
+
+  if(!name){ setMsg("物件名は必須です。","err"); return; }
+  if(!price){ setMsg("価格は必須です。","err"); return; }
+  if(!addr){ setMsg("住所は必須です。","err"); return; }
+  if(isNaN(lat)||isNaN(lng)){ setMsg("緯度・経度が必要です。「住所からピンを取得」を押すか手入力してください。","err"); return; }
+
+  const review = $("f_review").value.trim() ||
+    ("https://www.mansion-review.jp/mansion/search/?keyword=" + encodeURIComponent(name));
+
+  const prop = {
+    id: "added_" + Date.now(),
+    name,
+    unit: $("f_unit").value.trim(),
+    round: Number(round),
+    price,
+    priceNum: parseInt(price.replace(/[^0-9]/g,"")) || 0,
+    addr,
+    lat, lng,
+    access: $("f_access").value.trim(),
+    area: $("f_area").value.trim(),
+    year: $("f_year").value.trim(),
+    floors: $("f_floors").value.trim(),
+    mgmt: $("f_mgmt").value.trim(),
+    figure: pendingPdf ? pendingPdf.dataUrl : "",   // PDFはデータURLとして埋め込み
+    figureName: pendingPdf ? pendingPdf.filename : "",
+    review,
+    isNew: true
+  };
+
+  PROPERTIES.push(prop);
+  addedProps.push(prop);
+
+  // reset form
+  ["f_name","f_unit","f_price","f_area","f_access","f_year","f_floors","f_mgmt","f_review","f_addr","f_lat","f_lng"].forEach(id=>$(id).value="");
+  pendingPdf = null;
+  dz.classList.remove("has-file");
+  $("dzText").textContent = "図面PDFをドラッグ＆ドロップ";
+  $("dzSub").textContent = "またはクリックして選択（PDF）";
+  setMsg("");
+
+  closeAdd();
+  renderCards();
+  addMarker(prop);
+  refreshCounts();
+  showSaveBar();
+};
+
+function setMsg(t, cls){
+  const m = $("addMsg");
+  m.textContent = t || "";
+  m.className = "msg" + (cls ? " "+cls : "");
+}
+
+/* ---- add a single marker for a new property ---- */
+function addMarker(p){
+  if(!gmap) return;
+  const i = PROPERTIES.indexOf(p);
+  const marker = new google.maps.Marker({
+    position:{lat:p.lat,lng:p.lng}, map:gmap, title:p.name,
+    label:{text:String(i+1),color:"#f6f3ec",fontFamily:"IBM Plex Mono",fontSize:"12px",fontWeight:"600"},
+    icon:{
+      path:"M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z",
+      fillColor:"#152436", fillOpacity:1, strokeColor:"#9a7b3f", strokeWeight:1.5,
+      scale:1.7, anchor:new google.maps.Point(12,22), labelOrigin:new google.maps.Point(12,9)
+    },
+    zIndex:20
+  });
+  marker.addListener("click",()=>openInfo(p));
+  markers[p.id]=marker;
+}
+
+/* ---- refresh round-filter counts ---- */
+function refreshCounts(){
+  $("nAll").textContent = PROPERTIES.length;
+  $("n1").textContent = roundCount(1);
+  $("n2").textContent = roundCount(2);
+  $("n3").textContent = roundCount(3);
+}
+
+/* ---- save bar ---- */
+function showSaveBar(){
+  $("sbCount").textContent = addedProps.length;
+  $("saveBar").classList.add("show");
+}
+$("sbDismiss").onclick = () => $("saveBar").classList.remove("show");
+
+/* ---- export updated HTML ---- */
+$("exportBtn").onclick = () => {
+  // 現在のHTMLを取得し、PROPERTIES配列を最新状態に置き換える
+  const clean = PROPERTIES.map(p => {
+    const o = {...p};
+    delete o.isNew;
+    return o;
+  });
+  const newData = "const PROPERTIES = " + JSON.stringify(clean, null, 2) + ";";
+
+  let html = document.documentElement.outerHTML;
+  // 既存の PROPERTIES 定義（const PROPERTIES = [ ... ]; ）を置換
+  html = html.replace(/const PROPERTIES = \[[\s\S]*?\n\];/, newData);
+  // doctype を補う
+  html = "<!DOCTYPE html>\n" + html;
+
+  const blob = new Blob([html], {type:"text/html"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "index.html";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+};
+
+/* ====== init ====== */
+renderCards();
+renderWishlist();
+
+/* ====== load Google Maps ====== */
+(function(){
+  const KEY = "AIzaSyA3S6npBMUqERCjaPeQtbydtI5fM7zOobo";  // ← Google Maps API キー
+  if(KEY==="YOUR_GOOGLE_MAPS_API_KEY"){
+    $("map").classList.add("hidden");
+    $("mapFallback").classList.remove("hidden");
+    return;
+  }
+  const s=document.createElement("script");
+  s.src=`https://maps.googleapis.com/maps/api/js?key=${KEY}&libraries=places&callback=initMap`;
+  s.async=true; s.defer=true;
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
