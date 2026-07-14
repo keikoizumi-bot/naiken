@@ -152,30 +152,41 @@
   /* ---------- Layout（地図＝上／物件リスト＝下） ---------- */
   .layout{display:block}
 
-  /* Map：上部に固定表示（スクロールしても残る） */
-  .map-col{position:sticky;top:132px;height:52vh;min-height:360px;z-index:15;
+  /* Map：上部に固定表示（スクロールしても残る）。地図＋右サイドパネルの横並び */
+  .map-col{position:sticky;top:132px;height:42vh;min-height:300px;z-index:15;display:flex;
     border-bottom:1px solid var(--line);box-shadow:0 8px 20px rgba(21,36,54,.08)}
-  @media(max-width:980px){.map-col{position:relative;top:0;height:56vh;min-height:340px;z-index:auto}}
-  #map{width:100%;height:100%;background:var(--ivory-2)}
-  .map-fallback{width:100%;height:100%;display:flex;flex-direction:column;
+  @media(max-width:980px){.map-col{position:relative;top:0;height:46vh;min-height:300px;z-index:auto;display:block}}
+  .map-area{position:relative;flex:1;min-width:0;height:100%}
+  #map{position:absolute;inset:0;width:100%;height:100%;background:var(--ivory-2)}
+  .map-fallback{position:absolute;inset:0;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:14px;text-align:center;padding:40px;
-    color:var(--muted);background:var(--ivory-2);border-right:1px solid var(--line)}
+    color:var(--muted);background:var(--ivory-2)}
   .map-fallback .key{font-family:"IBM Plex Mono",monospace;font-size:12px;
     background:var(--white);border:1px solid var(--line);padding:6px 10px;border-radius:6px}
 
-  /* ---------- Detail sheet (経路・周辺施設) ---------- */
-  .detail-sheet{position:absolute;left:0;right:0;bottom:0;background:var(--ivory);
-    border-top:1px solid var(--line);box-shadow:0 -8px 30px rgba(21,36,54,.18);
-    transform:translateY(105%);transition:.26s cubic-bezier(.4,0,.2,1);z-index:20;
-    max-height:min(78%,460px);display:flex;flex-direction:column}
-  .detail-sheet.open{transform:none}
+  /* ---------- 経路・周辺施設パネル（地図の右にドッキング） ---------- */
+  .detail-sheet{flex:none;width:0;height:100%;overflow:hidden;background:var(--ivory);
+    border-left:1px solid var(--line);transition:width .28s cubic-bezier(.4,0,.2,1);z-index:20}
+  .detail-sheet.open{width:360px}
+  .ds-inner{width:360px;height:100%;display:flex;flex-direction:column}
+  /* スマホ等（狭い画面）：地図の下から出るシートに切替 */
+  @media(max-width:980px){
+    .detail-sheet{position:absolute;left:0;right:0;bottom:0;width:auto;height:auto;
+      max-height:78%;border-left:none;border-top:1px solid var(--line);
+      box-shadow:0 -8px 30px rgba(21,36,54,.18);transform:translateY(105%);
+      transition:transform .26s cubic-bezier(.4,0,.2,1)}
+    .detail-sheet.open{width:auto;transform:none}
+    .ds-inner{width:auto}
+  }
   .ds-head{background:var(--navy);color:var(--ivory);padding:12px 16px;display:flex;
     align-items:center;justify-content:space-between;gap:12px}
   .ds-head .ds-r{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;color:var(--accent-soft)}
   .ds-head .ds-name{font-size:14px;font-weight:700;line-height:1.35;margin-top:2px}
-  .ds-x{background:none;border:none;color:var(--ivory);font-size:20px;cursor:pointer;opacity:.75;line-height:1}
-  .ds-x:hover{opacity:1}
-  .ds-body{padding:15px 16px 18px;overflow-y:auto}
+  .ds-x{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:var(--ivory);
+    font-size:12px;font-family:inherit;cursor:pointer;opacity:.85;line-height:1;white-space:nowrap;
+    padding:6px 11px;border-radius:5px;transition:.15s}
+  .ds-x:hover{opacity:1;background:rgba(255,255,255,.2)}
+  .ds-body{flex:1;padding:15px 16px 18px;overflow-y:auto}
   .ds-sec{margin-bottom:17px}
   .ds-sec:last-child{margin-bottom:0}
   .ds-sec-t{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;
@@ -200,7 +211,12 @@
   .cr-sub{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.55}
   .cr-hint{font-size:12px;color:var(--muted)}
   .cr-hint.err{color:#b3402f}
-  .fac-chips{display:flex;flex-wrap:wrap;gap:7px}
+  .fac-chips{display:block}
+  .fac-group-t{display:flex;align-items:center;gap:6px;font-family:"IBM Plex Mono",monospace;
+    font-size:10px;letter-spacing:.06em;color:var(--muted);margin:14px 0 8px}
+  .fac-group-t:first-child{margin-top:0}
+  .fac-group-t .fg-dot{width:8px;height:8px;border-radius:2px;flex:none}
+  .fac-chips-row{display:flex;flex-wrap:wrap;gap:7px}
   .fac-chip{display:inline-flex;align-items:center;gap:7px;font-family:inherit;font-size:12.5px;
     padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--white);
     color:var(--ink);cursor:pointer;transition:.15s}
@@ -212,10 +228,20 @@
 
   /* Cards（地図の下・全幅グリッドで比較しやすく） */
   .cards-col{background:var(--ivory);position:relative;z-index:5}
-  .cards-head{padding:22px 0 12px;display:flex;align-items:baseline;justify-content:space-between}
+  .cards-head{padding:22px 0 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   .cards-head .t{font-size:13px;letter-spacing:.14em;text-transform:uppercase;
     color:var(--muted);font-family:"IBM Plex Mono",monospace}
   .cards-head .c{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--accent)}
+  .legend{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;
+    font-size:12px;color:var(--muted)}
+  .legend .lg-t{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);opacity:.75}
+  .legend .lg{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--ink)}
+  .legend .lg svg{color:var(--accent);flex:none}
+  .legend .lg-num{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;
+    border-radius:50%;background:var(--navy);color:var(--ivory);font-family:"Cormorant Garamond",serif;
+    font-size:11px;font-weight:600;flex:none}
+  @media(max-width:640px){.legend{margin-left:0;width:100%}}
   .cards-col .wrap{padding-bottom:72px}
 
   /* ---------- 物件一覧テーブル ---------- */
@@ -231,7 +257,7 @@
   .ptable thead th.sorted{color:var(--accent-soft)}
   .ptable thead th.sorted .arw{opacity:1}
   .ptable tbody td{padding:12px;border-top:1px solid var(--ivory-2);vertical-align:middle}
-  .prow{transition:.14s;cursor:pointer;scroll-margin-top:calc(52vh + 150px)}
+  .prow{transition:.14s;cursor:pointer;scroll-margin-top:calc(42vh + 150px)}
   .prow:hover{background:var(--ivory)}
   .prow.hl{background:#faf5e7;box-shadow:inset 3px 0 0 var(--accent)}
   .prow.wished{background:rgba(47,107,79,.055);box-shadow:inset 3px 0 0 var(--go)}
@@ -248,6 +274,7 @@
   .rt{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10px;
     letter-spacing:.04em;color:var(--accent);border:1px solid var(--accent-soft);
     padding:2px 7px;border-radius:999px;white-space:nowrap}
+  .rt-date{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);margin-top:4px}
   .c-price{font-family:"Cormorant Garamond",serif;font-size:19px;font-weight:600;
     color:var(--navy);white-space:nowrap}
   .c-price .yen{font-family:"Zen Kaku Gothic New",sans-serif;font-size:11px;font-weight:500;margin-left:1px}
@@ -365,41 +392,45 @@
 
 <div class="layout">
   <div class="map-col">
-    <div id="map"></div>
-    <div class="map-fallback hidden" id="mapFallback">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--navy)">地図を表示できません</div>
-      <div>Google Maps の API キーが未設定です。<br>下記の箇所にキーを差し込むと、全物件のピンが表示されます。</div>
-      <div class="key">index.html → AIzaSyAjHcREuZ3a9W5e9kNrfWHkA2dPGKW-W7Y</div>
+    <div class="map-area">
+      <div id="map"></div>
+      <div class="map-fallback hidden" id="mapFallback">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--navy)">地図はこのプレビューでは表示されません</div>
+        <div id="fbMsg">Google Maps の API キーが未設定です。<br>下記の箇所にキーを差し込むと、全物件のピンが表示されます。</div>
+        <div class="key" id="fbKey">index.html → YOUR_GOOGLE_MAPS_API_KEY</div>
+      </div>
     </div>
 
-    <!-- 経路・周辺施設 パネル -->
+    <!-- 経路・周辺施設 パネル（地図の右にドッキング） -->
     <div class="detail-sheet" id="detailSheet" aria-label="経路・周辺施設">
-      <div class="ds-head">
-        <div>
-          <div class="ds-r" id="dsRound"></div>
-          <div class="ds-name" id="dsName"></div>
-        </div>
-        <button class="ds-x" id="dsClose" aria-label="閉じる">✕</button>
-      </div>
-      <div class="ds-body">
-        <div class="ds-sec">
-          <div class="ds-sec-t">勤務地・行き先までの経路</div>
-          <div class="dest-row">
-            <input type="text" id="destInput" placeholder="例：東京駅／丸の内2-4-1 など目的地を入力">
-            <button id="destBtn">検索</button>
+      <div class="ds-inner">
+        <div class="ds-head">
+          <div>
+            <div class="ds-r" id="dsRound"></div>
+            <div class="ds-name" id="dsName"></div>
           </div>
-          <div class="mode-chips">
-            <button class="mode-chip active" data-mode="TRANSIT">🚃 電車</button>
-            <button class="mode-chip" data-mode="DRIVING">🚗 車</button>
-            <button class="mode-chip" data-mode="WALKING">🚶 徒歩</button>
-          </div>
-          <div class="commute-result" id="commuteResult"></div>
+          <button class="ds-x" id="dsClose" aria-label="経路・周辺パネルを閉じる">閉じる ✕</button>
         </div>
+        <div class="ds-body">
+          <div class="ds-sec">
+            <div class="ds-sec-t">勤務地・行き先までの経路</div>
+            <div class="dest-row">
+              <input type="text" id="destInput" placeholder="例：東京駅／丸の内2-4-1 など目的地を入力">
+              <button id="destBtn">検索</button>
+            </div>
+            <div class="mode-chips">
+              <button class="mode-chip active" data-mode="TRANSIT">🚃 電車</button>
+              <button class="mode-chip" data-mode="DRIVING">🚗 車</button>
+              <button class="mode-chip" data-mode="WALKING">🚶 徒歩</button>
+            </div>
+            <div class="commute-result" id="commuteResult"></div>
+          </div>
 
-        <div class="ds-sec">
-          <div class="ds-sec-t">周辺施設（半径800m）</div>
-          <div class="fac-chips" id="facChips"></div>
-          <div class="fac-note" id="facNote">気になるカテゴリを選ぶと、地図にピンが表示されます。</div>
+          <div class="ds-sec">
+            <div class="ds-sec-t">周辺施設（半径800m）</div>
+            <div class="fac-chips" id="facChips"></div>
+            <div class="fac-note" id="facNote">気になるカテゴリを選ぶと、地図にピンが表示されます。</div>
+          </div>
         </div>
       </div>
     </div>
@@ -410,6 +441,7 @@
       <div class="cards-head">
         <span class="t">Properties</span>
         <span class="c" id="visibleCount"></span>
+        <div class="legend" id="legend"></div>
       </div>
       <div class="table-wrap">
         <table class="ptable">
@@ -571,85 +603,55 @@
                 未確定のものは物件名検索URLを設定しています。
    - round  : 提案回次（1/2/3）
    ============================================================ */
+/* ============================================================
+   連携設定（デプロイ時に設定）
+   - BACKEND_URL      : obi消し＆Drive格納バックエンド(Cloud Run)のURL。
+       空文字のままだと従来どおりPDFをHTMLに埋め込むだけ（プレビュー動作）。
+   - PROJECT_FOLDER_ID: この案件のGoogle DriveフォルダID（案件ごとに変更）。
+   ============================================================ */
+const BACKEND_URL = "";   // 例: "https://equitas-viewing-backend-xxxx.a.run.app"
+const PROJECT_FOLDER_ID = "1cknlOYYMFBAN5yndzB1PkwKPPbH-RqLc";
+
 const PROPERTIES = [
-  {
-    id:"midtower",
-    name:"MID TOWER GRAND",
-    unit:"20階 北東向き",
-    round:2,
-    price:"1億980万円",
-    priceNum:10980,
-    addr:"東京都中央区月島1丁目",
-    lat:35.6642, lng:139.7833,
-    access:"東京メトロ有楽町線・都営大江戸線「月島」駅 徒歩2分",
-    area:"42.05㎡ / 1LDK",
-    year:"2020年10月",
-    floors:"20階／32階建",
-    mgmt:"月額21,640円",
-    figure:"figures/midtower_grand.pdf",
-    review:"https://www.mansion-review.jp/mansion/search/?keyword=MID%20TOWER%20GRAND"
-  },
-  {
-    id:"citytowers_toyosu",
-    name:"シティタワーズ豊洲 ザ・ツイン サウスタワー",
-    unit:"3515号室",
-    round:1,
-    price:"9,999万円",
-    priceNum:9999,
-    addr:"東京都江東区豊洲3丁目4番1号",
-    lat:35.6553, lng:139.7963,
-    access:"東京メトロ有楽町線「豊洲」駅 徒歩5分",
-    area:"52.50㎡ / 1LDK+WIC",
-    year:"2009年2月",
-    floors:"35階／48階建",
-    mgmt:"月額34,970円",
-    figure:"figures/citytowers_toyosu_south.pdf",
-    review:"https://www.mansion-review.jp/mansion/search/?keyword=%E3%82%B7%E3%83%86%E3%82%A3%E3%82%BF%E3%83%AF%E3%83%BC%E3%82%BA%E8%B1%8A%E6%B4%B2%E3%82%B6%E3%83%84%E3%82%A4%E3%83%B3"
-  },
-  {
-    id:"worldcity_capital",
-    name:"ワールドシティタワーズ キャピタルタワー",
-    unit:"1LDK+WIC",
-    round:1,
-    price:"7,980万円",
-    priceNum:7980,
-    addr:"東京都港区港南4丁目6-7",
-    lat:35.6248, lng:139.7466,
-    access:"山手線「品川」駅 徒歩14分／東京モノレール「天王洲アイル」駅 徒歩6分",
-    area:"45.28㎡ / 1LDK",
-    year:"2006年10月",
-    floors:"42階建 5階部分",
-    mgmt:"月額34,628円",
-    figure:"figures/worldcity_capital.pdf",
-    review:"https://www.mansion-review.jp/mansion/search/?keyword=%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%82%B7%E3%83%86%E3%82%A3%E3%82%BF%E3%83%AF%E3%83%BC%E3%82%BA%E3%82%AD%E3%83%A3%E3%83%94%E3%82%BF%E3%83%AB"
-  },
-  {
-    id:"worldcity_aqua",
-    name:"ワールドシティタワーズ アクアタワー",
-    unit:"38階 西向き",
-    round:3,
-    price:"1億480万円",
-    priceNum:10480,
-    addr:"東京都港区港南4丁目",
-    lat:35.6240, lng:139.7472,
-    access:"JR山手線「品川」駅 徒歩15分／東京モノレール「天王洲アイル」駅 徒歩5分",
-    area:"50.07㎡ / 1LDK",
-    year:"2005年10月",
-    floors:"38階／40階建",
-    mgmt:"月額38,168円",
-    figure:"figures/worldcity_aqua.pdf",
-    review:"https://www.mansion-review.jp/mansion/search/?keyword=%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%82%B7%E3%83%86%E3%82%A3%E3%82%BF%E3%83%AF%E3%83%BC%E3%82%BA%E3%82%A2%E3%82%AF%E3%82%A2%E3%82%BF%E3%83%AF%E3%83%BC"
-  }
 ];
 
 /* 周辺施設カテゴリ（Google Places のタイプ） */
-const FACILITIES = [
-  {key:"convenience_store", label:"コンビニ",       color:"#e0873a"},
-  {key:"post_office",       label:"郵便局",         color:"#c94b4b"},
-  {key:"hospital",          label:"病院",           color:"#3f7fbf"},
-  {key:"pharmacy",          label:"ドラッグストア", color:"#4f9a5e"},
-  {key:"supermarket",       label:"スーパー",       color:"#8a63b8"}
+/* 周辺施設：大カテゴリ→項目。
+   type=Google Places の種別／keyword=フリーワード検索。色は大カテゴリ単位。 */
+const FACILITY_GROUPS = [
+  { group:"日常の買い物・生活利便", color:"#e0873a", items:[
+    {key:"supermarket",       label:"スーパー",                 type:"supermarket"},
+    {key:"convenience_store", label:"コンビニ",                 type:"convenience_store"},
+    {key:"drugstore",         label:"ドラッグストア",           type:"drugstore"},
+    {key:"home_center",       label:"ホームセンター/100円ショップ", keyword:"ホームセンター 100円ショップ"},
+    {key:"mall",              label:"商店街・ショッピングモール", type:"shopping_mall"},
+    {key:"laundry",           label:"クリーニング店",           type:"laundry"},
+  ]},
+  { group:"医療・健康", color:"#3f7fbf", items:[
+    {key:"hospital",          label:"内科・総合病院",           type:"hospital"},
+    {key:"clinic",            label:"クリニック(小児科・皮膚科・歯科)", keyword:"クリニック 小児科 皮膚科 歯科"},
+    {key:"emergency",         label:"夜間・休日診療所",         keyword:"夜間 休日 診療所"},
+    {key:"pharmacy",          label:"薬局",                     type:"pharmacy"},
+    {key:"vet",               label:"動物病院",                 type:"veterinary_care"},
+  ]},
+  { group:"教育・子育て", color:"#4f9a5e", items:[
+    {key:"nursery",           label:"保育園・幼稚園",           keyword:"保育園 幼稚園"},
+    {key:"school",            label:"小学校・中学校",           keyword:"小学校 中学校"},
+    {key:"cram",              label:"塾・習い事",               keyword:"学習塾 習い事"},
+    {key:"childcare",         label:"児童館・子育て支援センター", keyword:"児童館 子育て支援センター"},
+    {key:"park",              label:"公園",                     type:"park"},
+  ]},
+  { group:"行政・金融", color:"#8a63b8", items:[
+    {key:"cityhall",          label:"役所",                     type:"local_government_office"},
+    {key:"post_office",       label:"郵便局",                   type:"post_office"},
+    {key:"bank",              label:"銀行・ATM",                type:"bank"},
+    {key:"library",           label:"図書館",                   type:"library"},
+    {key:"safety",            label:"警察・消防",               keyword:"警察署 消防署"},
+  ]},
 ];
+/* key→定義 の逆引き（色は大カテゴリから継承） */
+const FAC_BY_KEY = {};
+FACILITY_GROUPS.forEach(g => g.items.forEach(f => { f.color = g.color; FAC_BY_KEY[f.key] = f; }));
 
 /* ====== state ====== */
 let currentRound = "all";
@@ -658,7 +660,7 @@ let markers = {}, infoWindow = null, gmap = null;
 
 /* 経路・周辺施設 用 */
 let selectedId = null;
-let directionsService = null, directionsRenderer = null, placesService = null, facInfo = null;
+let directionsService = null, directionsRenderer = null, PlaceCls = null, facInfo = null;
 let travelMode = "TRANSIT";
 const activeFac = new Set();
 const facMarkers = {};   // key -> [markers]
@@ -679,7 +681,7 @@ $("n3").textContent = roundCount(3);
 /* ====== icons ====== */
 const icPin = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>';
 const icDoc = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
-const icRev = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2 9.2 8.6 2 9.2l5.5 4.6L5.8 22 12 18l6.2 4-1.7-8.2L22 9.2l-7.2-.6z"/></svg>';
+const icRev = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16"/><path d="M13 21V9h5a1 1 0 0 1 1 1v11"/><path d="M8 8h2M8 12h2M8 16h2M16 14h1M16 17h1"/></svg>';
 const icGo  = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-7.6-7-12A7 7 0 0 1 19 9c0 4.4-7 12-7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>';
 const icRoute = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2.4"/><circle cx="18" cy="5" r="2.4"/><path d="M8.4 18.5h6.1a3 3 0 0 0 0-6H9.5a3 3 0 0 1 0-6h6.1"/></svg>';
 const icHeart = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20s-6.6-4.5-9.2-8.2C1.1 9.3 2 5.8 5 4.9 7.1 4.3 9.1 5.2 10 6.8c.9-1.6 2.9-2.5 5-1.9 3 .9 3.9 4.4 2.2 6.9C18.6 15.5 12 20 12 20z"/></svg>';
@@ -732,7 +734,7 @@ function renderCards(){
         <div class="pn-name">${p.name}${p.isNew?' <span class="badge-new">追加</span>':''}</div>
         ${sub?`<div class="pn-sub" title="${sub}">${sub}</div>`:''}
       </td>
-      <td class="c-round"><span class="rt">第${p.round}回</span></td>
+      <td class="c-round"><span class="rt">第${p.round}回</span>${p.proposalDate?`<div class="rt-date">${p.proposalDate}</div>`:''}</td>
       <td class="c-price">${p.price.replace(/(億|万円)/g,'<span class="yen">$1</span>')}</td>
       <td class="c-layout">${layoutVal}</td>
       <td class="c-area">${areaVal}</td>
@@ -748,6 +750,12 @@ function renderCards(){
     tr.addEventListener("click",(e)=>{ if(!e.target.closest("button,a")) selectProperty(p.id); });
     box.appendChild(tr);
   });
+  if(list.length===0){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="10" style="text-align:center;color:var(--muted);padding:44px 20px;line-height:1.9">
+      まだ候補物件がありません。<br>右上の「＋物件を追加」から、図面PDFと物件情報を登録してください。</td>`;
+    box.appendChild(tr);
+  }
   $("visibleCount").textContent = `${list.length} 件`;
   bindCardEvents();
   updateSortIndicators();
@@ -820,7 +828,7 @@ function openPdf(id){
   const p = PROPERTIES.find(x=>x.id===id);
   $("pdfName").textContent = `${p.name} ${p.unit} — 図面`;
   $("pdfFrame").src = p.figure;
-  $("pdfOpen").href = p.figure;
+  $("pdfOpen").href = p.figureView || p.figure;
   $("pdfScrim").classList.add("open");
 }
 function closePdf(){
@@ -888,8 +896,10 @@ window.initMap = function(){
     suppressMarkers:false, preserveViewport:false,
     polylineOptions:{strokeColor:"#152436", strokeOpacity:.85, strokeWeight:5}
   });
-  if(google.maps.places){
-    placesService = new google.maps.places.PlacesService(gmap);
+  // 新しい Places ライブラリを読み込む（周辺施設検索に使用）
+  if(google.maps.importLibrary){
+    google.maps.importLibrary("places").then(lib=>{ PlaceCls = lib.Place; })
+      .catch(()=>{ PlaceCls = null; });
   }
 
   PROPERTIES.forEach((p,i)=>{
@@ -954,12 +964,25 @@ function selectProperty(id){
   // 目的地が入力済みなら自動で再計算
   if($("destInput").value.trim()) computeRoute();
 }
-function openDetail(){ $("detailSheet").classList.add("open"); }
+function openDetail(){
+  $("detailSheet").classList.add("open");
+  reflowMap();
+}
 function closeDetail(){
   $("detailSheet").classList.remove("open");
   clearFacilities();
   clearRoute();
   selectedId = null;
+  reflowMap();
+}
+/* パネルの開閉で地図の表示幅が変わるため、アニメ後に再描画して中心を維持 */
+function reflowMap(){
+  if(!(gmap && window.google && google.maps)) return;
+  setTimeout(()=>{
+    google.maps.event.trigger(gmap, "resize");
+    const p = PROPERTIES.find(x=>x.id===selectedId);
+    if(p) gmap.panTo({lat:p.lat, lng:p.lng});
+  }, 300);
 }
 $("dsClose").onclick = closeDetail;
 
@@ -1020,17 +1043,26 @@ function computeRoute(){
 function buildFacChips(){
   const box = $("facChips");
   box.innerHTML = "";
-  FACILITIES.forEach(f=>{
-    const b = document.createElement("button");
-    b.className = "fac-chip";
-    b.dataset.fac = f.key;
-    b.innerHTML = `<span class="dot" style="background:${f.color}"></span>${f.label}<span class="fc-n"></span>`;
-    b.onclick = ()=>toggleFacility(f.key);
-    box.appendChild(b);
+  FACILITY_GROUPS.forEach(g=>{
+    const gt = document.createElement("div");
+    gt.className = "fac-group-t";
+    gt.innerHTML = `<span class="fg-dot" style="background:${g.color}"></span>${g.group}`;
+    box.appendChild(gt);
+    const row = document.createElement("div");
+    row.className = "fac-chips-row";
+    g.items.forEach(f=>{
+      const b = document.createElement("button");
+      b.className = "fac-chip";
+      b.dataset.fac = f.key;
+      b.innerHTML = `<span class="dot" style="background:${f.color}"></span>${f.label}<span class="fc-n"></span>`;
+      b.onclick = ()=>toggleFacility(f.key);
+      row.appendChild(b);
+    });
+    box.appendChild(row);
   });
 }
 function updateFacChip(key, count){
-  const f = FACILITIES.find(x=>x.key===key);
+  const f = FAC_BY_KEY[key];
   const chip = document.querySelector(`.fac-chip[data-fac="${key}"]`);
   if(!chip) return;
   const n = chip.querySelector(".fc-n");
@@ -1058,12 +1090,12 @@ function clearFacilities(){
   activeFac.clear();
   if(facInfo) facInfo.close();
 }
-function placeFacMarkers(key, results){
-  const f = FACILITIES.find(x=>x.key===key);
+function placeFacMarkers(key, places){
+  const f = FAC_BY_KEY[key];
   removeFacMarkers(key);
-  facMarkers[key] = results.map(r=>{
+  facMarkers[key] = places.map(pl=>{
     const m = new google.maps.Marker({
-      position:r.geometry.location, map:gmap, title:r.name,
+      position:pl.location, map:gmap, title:pl.displayName,
       icon:{ path:google.maps.SymbolPath.CIRCLE, scale:6.5,
         fillColor:f.color, fillOpacity:1, strokeColor:"#ffffff", strokeWeight:1.5 },
       zIndex:8
@@ -1071,21 +1103,42 @@ function placeFacMarkers(key, results){
     m.addListener("click",()=>{
       facInfo.setContent(`<div class="gm-iw">
         <div class="gm-r" style="color:${f.color}">${f.label}</div>
-        <h5 style="margin-bottom:2px">${r.name}</h5>
-        <div style="font-size:11px;color:#6b6558">${r.vicinity||""}</div>
-        ${r.rating?`<div style="font-size:12px;color:#9a7b3f;margin-top:4px">★ ${r.rating}${r.user_ratings_total?`（${r.user_ratings_total}）`:""}</div>`:""}
+        <h5 style="margin-bottom:2px">${pl.displayName||""}</h5>
+        <div style="font-size:11px;color:#6b6558">${pl.formattedAddress||""}</div>
+        ${pl.rating?`<div style="font-size:12px;color:#9a7b3f;margin-top:4px">★ ${pl.rating}${pl.userRatingCount?`（${pl.userRatingCount}）`:""}</div>`:""}
       </div>`);
       facInfo.open(gmap, m);
     });
     return m;
   });
 }
+/* 新しい Places API での周辺検索。type→searchNearby / keyword→searchByText */
+async function searchFacility(f, center){
+  const base = {
+    fields:["displayName","location","formattedAddress","rating","userRatingCount"],
+    maxResultCount:20
+  };
+  if(f.type){
+    const { places } = await PlaceCls.searchNearby({
+      ...base,
+      locationRestriction:{ center, radius:800 },
+      includedTypes:[f.type]
+    });
+    return places || [];
+  }
+  const { places } = await PlaceCls.searchByText({
+    ...base,
+    textQuery:f.keyword,
+    locationBias:{ center, radius:800 }
+  });
+  return places || [];
+}
 function toggleFacility(key){
   const p = PROPERTIES.find(x=>x.id===selectedId);
   if(!p) return;
-  if(!placesService){
+  if(!PlaceCls){
     $("facNote").style.color = "#b3402f";
-    $("facNote").textContent = "周辺施設の検索には Places ライブラリの読み込みが必要です。";
+    $("facNote").textContent = "周辺施設の検索には新しい Places ライブラリの読み込みが必要です。";
     return;
   }
   if(activeFac.has(key)){
@@ -1096,23 +1149,20 @@ function toggleFacility(key){
   }
   activeFac.add(key);
   updateFacChip(key, "…");
-  placesService.nearbySearch(
-    { location:{lat:p.lat, lng:p.lng}, radius:800, type:key },
-    (results, status)=>{
-      if(status===google.maps.places.PlacesServiceStatus.OK && results){
-        placeFacMarkers(key, results);
-        updateFacChip(key, results.length);
-      } else if(status===google.maps.places.PlacesServiceStatus.ZERO_RESULTS){
-        updateFacChip(key, 0);
-      } else {
-        updateFacChip(key, 0);
-        if(status==="REQUEST_DENIED"){
-          $("facNote").style.color = "#b3402f";
-          $("facNote").textContent = "周辺施設の取得には Google Cloud で Places API の有効化が必要です。";
-        }
-      }
-    }
-  );
+  const f = FAC_BY_KEY[key];
+  searchFacility(f, { lat:p.lat, lng:p.lng })
+    .then(places=>{
+      if(!activeFac.has(key)) return;   // 検索中にトグルが外れた場合は破棄
+      placeFacMarkers(key, places);
+      updateFacChip(key, places.length);
+    })
+    .catch(err=>{
+      updateFacChip(key, 0);
+      $("facNote").style.color = "#b3402f";
+      $("facNote").textContent = /denied|permission|referer|blocked|ApiTargetBlocked|ApiNotActivated/i.test(err.message || "")
+        ? "周辺施設の取得には、キーで Places API (New) の有効化と対象ドメインの許可が必要です。"
+        : ("周辺施設の取得に失敗しました：" + (err.message || ""));
+    });
 }
 
 /* ============================================================
@@ -1149,7 +1199,7 @@ function handleFile(file){
   if(file.type !== "application/pdf"){ setMsg("PDFファイルを選んでください。","err"); return; }
   const reader = new FileReader();
   reader.onload = () => {
-    pendingPdf = { dataUrl: reader.result, filename: file.name };
+    pendingPdf = { file, dataUrl: reader.result, filename: file.name };
     dz.classList.add("has-file");
     $("dzText").textContent = file.name;
     $("dzSub").textContent = "別のPDFに変えるにはもう一度クリック";
@@ -1179,7 +1229,7 @@ $("geoBtn").onclick = () => {
 };
 
 /* ---- submit new property ---- */
-$("addSubmit").onclick = () => {
+$("addSubmit").onclick = async () => {
   const name = $("f_name").value.trim();
   const price = $("f_price").value.trim();
   const addr = $("f_addr").value.trim();
@@ -1192,8 +1242,46 @@ $("addSubmit").onclick = () => {
   if(!addr){ setMsg("住所は必須です。","err"); return; }
   if(isNaN(lat)||isNaN(lng)){ setMsg("緯度・経度が必要です。「住所からピンを取得」を押すか手入力してください。","err"); return; }
 
+  // マンションレビューはサイト内検索がJS駆動でGETリンク不可のため、
+  // URL未指定時は Google のサイト内検索にフォールバック（該当物件の詳細ページに確実に到達できる）
   const review = $("f_review").value.trim() ||
-    ("https://www.mansion-review.jp/mansion/search/?keyword=" + encodeURIComponent(name));
+    ("https://www.google.com/search?q=" + encodeURIComponent(name + " site:mansion-review.jp"));
+
+  // 図面PDFの扱い:
+  //  - BACKEND_URL 設定時 … バックエンドで obi消し→Drive2か所格納→図面はDriveプレビューを開く
+  //  - 未設定時         … 従来どおりPDFをHTMLに埋め込み（プレビュー用途）
+  let figure = "", figureView = "", figureName = "", proposalDate = "", uploadDate = "";
+  if(pendingPdf){
+    figureName = pendingPdf.filename;
+    if(BACKEND_URL && pendingPdf.file){
+      $("addSubmit").disabled = true;
+      setMsg("図面をアップロードし、obi消し・Drive格納を実行中…");
+      try{
+        const fd = new FormData();
+        fd.append("file", pendingPdf.file);
+        fd.append("project_folder_id", PROJECT_FOLDER_ID);
+        const r = await fetch(BACKEND_URL.replace(/\/$/,"") + "/upload", { method:"POST", body:fd });
+        if(!r.ok){
+          const j = await r.json().catch(()=>({}));
+          throw new Error(j.detail || ("HTTP " + r.status));
+        }
+        const res = await r.json();
+        figure = res.candidate.previewLink;
+        figureView = res.candidate.webViewLink || res.candidate.previewLink;
+        proposalDate = res.proposalDate || "";
+        uploadDate = res.date || "";
+        setMsg("Driveに格納しました（" + res.candidate.name + "）。", "ok");
+      }catch(err){
+        // 失敗しても作業を止めない: 図面はこのページに埋め込んでおく
+        figure = pendingPdf.dataUrl;
+        setMsg("Drive格納に失敗したため図面はページに埋め込みました: " + err.message, "err");
+      }finally{
+        $("addSubmit").disabled = false;
+      }
+    } else {
+      figure = pendingPdf.dataUrl;
+    }
+  }
 
   const prop = {
     id: "added_" + Date.now(),
@@ -1209,8 +1297,11 @@ $("addSubmit").onclick = () => {
     year: $("f_year").value.trim(),
     floors: $("f_floors").value.trim(),
     mgmt: $("f_mgmt").value.trim(),
-    figure: pendingPdf ? pendingPdf.dataUrl : "",   // PDFはデータURLとして埋め込み
-    figureName: pendingPdf ? pendingPdf.filename : "",
+    figure,
+    figureView,
+    figureName,
+    proposalDate,   // アップロード日 mm/dd（提案回次の日付として表示）
+    uploadDate,     // yyyymmdd
     review,
     isNew: true
   };
@@ -1224,7 +1315,6 @@ $("addSubmit").onclick = () => {
   dz.classList.remove("has-file");
   $("dzText").textContent = "図面PDFをドラッグ＆ドロップ";
   $("dzSub").textContent = "またはクリックして選択（PDF）";
-  setMsg("");
 
   closeAdd();
   renderCards();
@@ -1296,21 +1386,50 @@ $("exportBtn").onclick = () => {
   URL.revokeObjectURL(url);
 };
 
+/* ====== 凡例（操作アイコンの意味） ====== */
+function renderLegend(){
+  const items = [
+    ['<span class="lg-num">#</span>', "地図で表示"],
+    [icDoc,  "図面"],
+    [icRev,  "マンションレビュー"],
+    [icRoute,"経路・周辺施設"],
+    [icHeart,"内見に行きたい"]
+  ];
+  $("legend").innerHTML =
+    `<span class="lg-t">凡例</span>` +
+    items.map(([ic,label])=>`<span class="lg">${ic}${label}</span>`).join("");
+}
+
 /* ====== init ====== */
+renderLegend();
 renderCards();
 renderWishlist();
 
 /* ====== load Google Maps ====== */
+function showMapUnavailable(msg, hideKey){
+  $("map").classList.add("hidden");
+  $("mapFallback").classList.remove("hidden");
+  if(msg) $("fbMsg").innerHTML = msg;
+  if(hideKey) $("fbKey").style.display = "none";
+}
 (function(){
   const KEY = "AIzaSyAjHcREuZ3a9W5e9kNrfWHkA2dPGKW-W7Y";  // ← Google Maps API キー
-if(KEY==="UNSET"){
-    $("map").classList.add("hidden");
-    $("mapFallback").classList.remove("hidden");
+  if(KEY==="YOUR_GOOGLE_MAPS_API_KEY"){
+    showMapUnavailable();
     return;
   }
   const s=document.createElement("script");
-  s.src=`https://maps.googleapis.com/maps/api/js?key=${KEY}&libraries=places&callback=initMap`;
+  s.src=`https://maps.googleapis.com/maps/api/js?key=${KEY}&v=weekly&loading=async&libraries=places&callback=initMap`;
   s.async=true; s.defer=true;
+  // 外部通信が遮断される環境（claude.ai のプレビュー等）向けフォールバック
+  s.onerror = ()=> showMapUnavailable(
+    "このプレビュー環境では外部の地図を読み込めません。<br>地図・経路・周辺施設は、Netlify などに公開した本番ページで表示されます。", true);
+  setTimeout(()=>{
+    if(!(window.google && window.google.maps)){
+      showMapUnavailable(
+        "このプレビュー環境では外部の地図を読み込めません。<br>地図・経路・周辺施設は、Netlify などに公開した本番ページで表示されます。", true);
+    }
+  }, 3500);
   document.head.appendChild(s);
 })();
 </script>
