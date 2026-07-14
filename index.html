@@ -1302,8 +1302,8 @@ renderWishlist();
 
 /* ====== load Google Maps ====== */
 (function(){
-  const KEY = "AIzaSyA3S6npBMUqERCjaPeQtbydtI5fM7zOobo";  // ← Google Maps API キー
-  if(KEY==="AIzaSyAjHcREuZ3a9W5e9kNrfWHkA2dPGKW-W7Y"){
+  const KEY = "AIzaSyAjHcREuZ3a9W5e9kNrfWHkA2dPGKW-W7Y";  // ← Google Maps API キー
+if(KEY==="UNSET"){
     $("map").classList.add("hidden");
     $("mapFallback").classList.remove("hidden");
     return;
