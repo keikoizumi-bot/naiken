@@ -511,72 +511,9 @@
         <input type="file" id="fileInput" accept="application/pdf" hidden>
       </div>
 
-      <div class="form-grid">
-        <div class="field full">
-          <label>物件名 <span class="req">*</span></label>
-          <input type="text" id="f_name" placeholder="例：シティタワー高輪">
-        </div>
-        <div class="field">
-          <label>部屋・階など</label>
-          <input type="text" id="f_unit" placeholder="例：1701号室 / 20階 南向き">
-        </div>
-        <div class="field">
-          <label>提案回次 <span class="req">*</span></label>
-          <select id="f_round">
-            <option value="1">第1回</option>
-            <option value="2" selected>第2回</option>
-            <option value="3">第3回</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>価格（表示）<span class="req">*</span></label>
-          <input type="text" id="f_price" placeholder="例：1億2,800万円">
-        </div>
-        <div class="field">
-          <label>専有面積・間取り</label>
-          <input type="text" id="f_area" placeholder="例：55.20㎡ / 1LDK">
-        </div>
-        <div class="field full">
-          <label>交通・アクセス</label>
-          <input type="text" id="f_access" placeholder="例：都営浅草線「高輪台」駅 徒歩5分">
-        </div>
-        <div class="field">
-          <label>築年月</label>
-          <input type="text" id="f_year" placeholder="例：2019年3月">
-        </div>
-        <div class="field">
-          <label>階数</label>
-          <input type="text" id="f_floors" placeholder="例：17階 / 40階建">
-        </div>
-        <div class="field">
-          <label>管理費等</label>
-          <input type="text" id="f_mgmt" placeholder="例：月額28,000円">
-        </div>
-        <div class="field">
-          <label>マンションレビューURL</label>
-          <input type="text" id="f_review" placeholder="空欄なら物件名で自動検索リンク">
-        </div>
-        <div class="field full">
-          <label>住所 <span class="req">*</span></label>
-          <input type="text" id="f_addr" placeholder="例：東京都港区高輪3丁目">
-        </div>
-        <div class="field full">
-          <div class="geo-row">
-            <div class="field">
-              <label>緯度 lat</label>
-              <input type="text" id="f_lat" placeholder="35.6300">
-            </div>
-            <div class="field">
-              <label>経度 lng</label>
-              <input type="text" id="f_lng" placeholder="139.7400">
-            </div>
-            <button class="geo-btn" id="geoBtn">住所からピンを取得</button>
-          </div>
-          <div class="hint" style="margin-top:6px">
-            「住所からピンを取得」で自動入力できます。うまくいかない場合は
-            <a href="https://www.google.com/maps" target="_blank" rel="noopener">Googleマップ</a>で住所を右クリックし、表示される数値を貼り付けてください。
-          </div>
-        </div>
+      <div class="hint" style="text-align:center;line-height:1.8">
+        図面PDFから物件名・価格・住所などを自動で読み取り、一覧と地図に反映します。<br>
+        読み取れなかった項目は一覧上で「—」と表示されます。
       </div>
     </div>
     <div class="add-foot">
@@ -903,6 +840,7 @@ window.initMap = function(){
   }
 
   PROPERTIES.forEach((p,i)=>{
+    if(!(isFinite(p.lat) && isFinite(p.lng))) return;  // 座標未取得（住所抽出失敗など）はスキップ
     const marker = new google.maps.Marker({
       position:{lat:p.lat,lng:p.lng}, map:gmap, title:p.name,
       label:{text:String(i+1),color:"#f6f3ec",fontFamily:"IBM Plex Mono",fontSize:"12px",fontWeight:"600"},
@@ -981,7 +919,7 @@ function reflowMap(){
   setTimeout(()=>{
     google.maps.event.trigger(gmap, "resize");
     const p = PROPERTIES.find(x=>x.id===selectedId);
-    if(p) gmap.panTo({lat:p.lat, lng:p.lng});
+    if(p && isFinite(p.lat) && isFinite(p.lng)) gmap.panTo({lat:p.lat, lng:p.lng});
   }, 300);
 }
 $("dsClose").onclick = closeDetail;
@@ -1208,95 +1146,82 @@ function handleFile(file){
   reader.readAsDataURL(file);
 }
 
-/* ---- geocode via Google Maps (uses same key) ---- */
-$("geoBtn").onclick = () => {
-  const addr = $("f_addr").value.trim();
-  if(!addr){ setMsg("先に住所を入力してください。","err"); return; }
-  if(!(window.google && google.maps && google.maps.Geocoder)){
-    setMsg("地図が読み込まれていないため自動取得できません。手動で入力してください。","err"); return;
-  }
-  setMsg("住所からピンを取得中…");
-  new google.maps.Geocoder().geocode({ address: addr, region:"jp" }, (res, status) => {
+/* ---- 住所からピンを取得してプロパティに反映（PDF自動抽出の住所を使用） ---- */
+function geocodeAndPin(prop){
+  if(!prop.addr || !(window.google && google.maps && google.maps.Geocoder)) return;
+  new google.maps.Geocoder().geocode({ address: prop.addr, region:"jp" }, (res, status) => {
     if(status==="OK" && res[0]){
       const loc = res[0].geometry.location;
-      $("f_lat").value = loc.lat().toFixed(5);
-      $("f_lng").value = loc.lng().toFixed(5);
-      setMsg("ピンを取得しました。","ok");
-    } else {
-      setMsg("取得できませんでした。Googleマップで座標を調べて入力してください。","err");
+      prop.lat = loc.lat();
+      prop.lng = loc.lng();
+      addMarker(prop);
+      if(gmap){ gmap.panTo({lat:prop.lat, lng:prop.lng}); }
     }
   });
-};
+}
 
-/* ---- submit new property ---- */
+/* ---- submit new property（PDFのみ・情報は自動抽出） ---- */
 $("addSubmit").onclick = async () => {
-  const name = $("f_name").value.trim();
-  const price = $("f_price").value.trim();
-  const addr = $("f_addr").value.trim();
-  const lat = parseFloat($("f_lat").value);
-  const lng = parseFloat($("f_lng").value);
-  const round = $("f_round").value;
-
-  if(!name){ setMsg("物件名は必須です。","err"); return; }
-  if(!price){ setMsg("価格は必須です。","err"); return; }
-  if(!addr){ setMsg("住所は必須です。","err"); return; }
-  if(isNaN(lat)||isNaN(lng)){ setMsg("緯度・経度が必要です。「住所からピンを取得」を押すか手入力してください。","err"); return; }
-
-  // マンションレビューはサイト内検索がJS駆動でGETリンク不可のため、
-  // URL未指定時は Google のサイト内検索にフォールバック（該当物件の詳細ページに確実に到達できる）
-  const review = $("f_review").value.trim() ||
-    ("https://www.google.com/search?q=" + encodeURIComponent(name + " site:mansion-review.jp"));
+  if(!pendingPdf){ setMsg("図面PDFを添付してください。","err"); return; }
 
   // 図面PDFの扱い:
-  //  - BACKEND_URL 設定時 … バックエンドで obi消し→Drive2か所格納→図面はDriveプレビューを開く
-  //  - 未設定時         … 従来どおりPDFをHTMLに埋め込み（プレビュー用途）
-  let figure = "", figureView = "", figureName = "", proposalDate = "", uploadDate = "";
-  if(pendingPdf){
-    figureName = pendingPdf.filename;
-    if(BACKEND_URL && pendingPdf.file){
-      $("addSubmit").disabled = true;
-      setMsg("図面をアップロードし、obi消し・Drive格納を実行中…");
-      try{
-        const fd = new FormData();
-        fd.append("file", pendingPdf.file);
-        fd.append("project_folder_id", PROJECT_FOLDER_ID);
-        const r = await fetch(BACKEND_URL.replace(/\/$/,"") + "/upload", { method:"POST", body:fd });
-        if(!r.ok){
-          const j = await r.json().catch(()=>({}));
-          throw new Error(j.detail || ("HTTP " + r.status));
-        }
-        const res = await r.json();
-        figure = res.candidate.previewLink;
-        figureView = res.candidate.webViewLink || res.candidate.previewLink;
-        proposalDate = res.proposalDate || "";
-        uploadDate = res.date || "";
-        setMsg("Driveに格納しました（" + res.candidate.name + "）。", "ok");
-      }catch(err){
-        // 失敗しても作業を止めない: 図面はこのページに埋め込んでおく
-        figure = pendingPdf.dataUrl;
-        setMsg("Drive格納に失敗したため図面はページに埋め込みました: " + err.message, "err");
-      }finally{
-        $("addSubmit").disabled = false;
+  //  - BACKEND_URL 設定時 … バックエンドで obi消し→Drive2か所格納→物件情報を自動抽出
+  //  - 未設定時         … PDFをHTMLに埋め込み（物件名はファイル名・ピンなしのプレビュー動作）
+  let figure = "", figureView = "", proposalDate = "", uploadDate = "";
+  let ext = {};
+  const figureName = pendingPdf.filename;
+
+  if(BACKEND_URL && pendingPdf.file){
+    $("addSubmit").disabled = true;
+    setMsg("図面から物件情報を読み取り、obi消し・Drive格納を実行中…");
+    try{
+      const fd = new FormData();
+      fd.append("file", pendingPdf.file);
+      fd.append("project_folder_id", PROJECT_FOLDER_ID);
+      const r = await fetch(BACKEND_URL.replace(/\/$/,"") + "/upload", { method:"POST", body:fd });
+      if(!r.ok){
+        const j = await r.json().catch(()=>({}));
+        throw new Error(j.detail || ("HTTP " + r.status));
       }
-    } else {
+      const res = await r.json();
+      figure = res.candidate.previewLink;
+      figureView = res.candidate.webViewLink || res.candidate.previewLink;
+      proposalDate = res.proposalDate || "";
+      uploadDate = res.date || "";
+      ext = res.extracted || {};
+      setMsg("Driveに格納しました（" + res.candidate.name + "）。", "ok");
+    }catch(err){
+      // 失敗しても作業を止めない: 図面はこのページに埋め込んでおく
       figure = pendingPdf.dataUrl;
+      setMsg("Drive格納に失敗したため図面はページに埋め込みました: " + err.message, "err");
+    }finally{
+      $("addSubmit").disabled = false;
     }
+  } else {
+    figure = pendingPdf.dataUrl;
   }
+
+  const name = ext.name || figureName.replace(/\.pdf$/i, "");
+  const price = ext.price || "";
+  // マンションレビューはサイト内検索がJS駆動でGETリンク不可のため、
+  // Google のサイト内検索リンクを自動生成（該当物件の詳細ページに確実に到達できる）
+  const review = "https://www.google.com/search?q=" + encodeURIComponent(name + " site:mansion-review.jp");
 
   const prop = {
     id: "added_" + Date.now(),
     name,
-    unit: $("f_unit").value.trim(),
-    round: Number(round),
+    unit: ext.unit || "",
+    round: currentRound !== "all" ? Number(currentRound) : 1,
     price,
     priceNum: parseInt(price.replace(/[^0-9]/g,"")) || 0,
-    addr,
-    lat, lng,
-    access: $("f_access").value.trim(),
-    area: $("f_area").value.trim(),
-    year: $("f_year").value.trim(),
-    floors: $("f_floors").value.trim(),
-    mgmt: $("f_mgmt").value.trim(),
+    addr: ext.addr || "",
+    lat: (typeof ext.lat === "number") ? ext.lat : NaN,
+    lng: (typeof ext.lng === "number") ? ext.lng : NaN,
+    access: ext.access || "",
+    area: ext.area || "",
+    year: ext.year || "",
+    floors: ext.floors || "",
+    mgmt: ext.mgmt || "",
     figure,
     figureView,
     figureName,
@@ -1309,8 +1234,7 @@ $("addSubmit").onclick = async () => {
   PROPERTIES.push(prop);
   addedProps.push(prop);
 
-  // reset form
-  ["f_name","f_unit","f_price","f_area","f_access","f_year","f_floors","f_mgmt","f_review","f_addr","f_lat","f_lng"].forEach(id=>$(id).value="");
+  // reset dropzone
   pendingPdf = null;
   dz.classList.remove("has-file");
   $("dzText").textContent = "図面PDFをドラッグ＆ドロップ";
@@ -1318,7 +1242,12 @@ $("addSubmit").onclick = async () => {
 
   closeAdd();
   renderCards();
-  addMarker(prop);
+  if(isFinite(prop.lat) && isFinite(prop.lng)){
+    addMarker(prop);                      // バックエンドが座標まで解決済み
+    if(gmap) gmap.panTo({lat:prop.lat, lng:prop.lng});
+  } else {
+    geocodeAndPin(prop);                  // フォールバック: 住所からGoogleジオコーダで取得
+  }
   refreshCounts();
   showSaveBar();
 };
@@ -1331,7 +1260,7 @@ function setMsg(t, cls){
 
 /* ---- add a single marker for a new property ---- */
 function addMarker(p){
-  if(!gmap) return;
+  if(!gmap || !(isFinite(p.lat) && isFinite(p.lng))) return;
   const i = PROPERTIES.indexOf(p);
   const marker = new google.maps.Marker({
     position:{lat:p.lat,lng:p.lng}, map:gmap, title:p.name,
