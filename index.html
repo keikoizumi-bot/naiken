@@ -1146,6 +1146,153 @@ function handleFile(file){
   reader.readAsDataURL(file);
 }
 
+/* ============================================================
+   ブラウザ内PDF抽出（バックエンド未接続でも動く）
+   - pdf.js でテキスト＋座標を取り、「ラベルの右→直下」方式で抽出
+   - 住所→座標は国土地理院ジオコーダ（無料・キー不要）
+   ============================================================ */
+async function loadPdfJs(){
+  if(window.pdfjsLib) return window.pdfjsLib;
+  await new Promise((ok,ng)=>{
+    const s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    s.onload=ok; s.onerror=ng; document.head.appendChild(s);
+  });
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  return window.pdfjsLib;
+}
+
+const EXT_STOP = new Set(["物件種別","物件名","価格","所在","所在地","交通","専有面積","バルコニー",
+  "その他","構造","建築","築年月","総戸数","分譲会社","施工会社","設計会社","管理会社","管理形態",
+  "管理費","修繕積立金","駐車場","自転車","バイク","設備","現況","引渡時期","ペット","権利",
+  "敷地面積","共有持分","用途地域"]);
+const _stripL = s => s.replace(/[：:]+$/,"");
+
+function _extRight(words, label, maxGap=90){
+  const cands = words.filter(w => _stripL(w[4])===label || w[4].startsWith(label));
+  for(const lw of cands){
+    const ly=(lw[1]+lw[3])/2, lh=Math.max(lw[3]-lw[1],6);
+    const row=words.filter(w => w!==lw && w[0]>=lw[2]-2 && Math.abs((w[1]+w[3])/2-ly)<=lh*0.75)
+                   .sort((a,b)=>a[0]-b[0]);
+    let out=[], lastX=lw[2];
+    for(const w of row){
+      if(w[0]-lastX>maxGap) break;
+      if(EXT_STOP.has(_stripL(w[4]))) break;
+      out.push(w[4]); lastX=w[2];
+    }
+    const v=out.join("").trim();
+    if(v) return v;
+  }
+  return "";
+}
+function _extBelow(words, label, maxGap=90){
+  const cands = words.filter(w => _stripL(w[4])===label || w[4].startsWith(label));
+  for(const lw of cands){
+    const seeds=words.filter(w => w[1]>=lw[3]-2 && w[1]-lw[3]<=28 && w[0]>=lw[0]-12 && w[0]-lw[2]<=240);
+    if(!seeds.length) continue;
+    const seed=seeds.reduce((a,b)=>{
+      const da=Math.max(0,a[0]-lw[2],lw[0]-a[2]), db=Math.max(0,b[0]-lw[2],lw[0]-b[2]);
+      return (da<db || (da===db && a[1]<=b[1])) ? a : b;
+    });
+    const sy=(seed[1]+seed[3])/2, sh=Math.max(seed[3]-seed[1],6);
+    const row=words.filter(w => w[0]>=seed[0]-2 && Math.abs((w[1]+w[3])/2-sy)<=sh*0.8)
+                   .sort((a,b)=>a[0]-b[0]);
+    let out=[], lastX=null;
+    for(const w of row){
+      if(lastX!==null && w[0]-lastX>maxGap) break;
+      if(EXT_STOP.has(_stripL(w[4]))) break;
+      out.push(w[4]); lastX=w[2];
+    }
+    const v=out.join("").trim();
+    if(v) return v;
+  }
+  return "";
+}
+const _extClean = s => s.replace(/[（(]税込[)）]/g,"").replace(/[ \t　]+/g,"").replace(/^[ :：\n]+|[ :：\n]+$/g,"");
+
+function computeExtract(words, text){
+  const flat = text.replace(/\s+/g," ");
+  const out = {};
+  out.name = _extClean(_extRight(words,"物件名") || _extBelow(words,"物件名"));
+  let praw = _extRight(words,"価格");
+  if(!/[0-9]/.test(praw)) praw = _extBelow(words,"価格");
+  let m = _extClean(praw).match(/([0-9][0-9,，\.]*)\s*(億)?\s*(万?円)?/);
+  out.price = (m && m[1]) ? (m[1].replace(/，/g,",") + (((m[2]||"")+(m[3]||"")) || "万円")) : "";
+  // 住所（〒直後・営業所near を除外して最長候補）
+  const addrRe = /(?:東京都|北海道|京都府|大阪府|[一-龥]{2,3}県)?[一-龥ぁ-んァ-ヶa-zA-Z0-9]{1,8}[市区町村][一-龥ぁ-んァ-ヶa-zA-Z0-9]{0,15}(?:\d+丁目)?[\d\-－ー]*/g;
+  const cands=[]; let am;
+  while((am=addrRe.exec(flat))!==null){
+    const idx=am.index, c=am[0];
+    const ctx=flat.slice(Math.max(0,idx-12),idx);
+    if(ctx.includes("〒") || flat.slice(idx,idx+c.length+6).includes("営業所")) continue;
+    if(!/\d/.test(c)) continue;                       // 番地なしは住所とみなさない
+    if(/所有者|管理|月額|専有|徒歩/.test(c)) continue;  // 「区分所有者」等の誤マッチ除外
+    cands.push(c);
+  }
+  out.addr = cands.length ? _extClean(cands.reduce((a,b)=>b.length>a.length?b:a)) : "";
+  m = flat.match(/([一-龥ァ-ヶa-zA-Z0-9]*(?:線|ライン)?「[^」]+」駅?\s*徒歩\s*\d+\s*分)/);
+  out.access = m ? m[1].replace(/\s+/g," ").replace("徒歩 ","徒歩").trim() : "";
+  const araw = _extRight(words,"専有面積");
+  let area = (araw.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:㎡|平米|m2|m²)/)||[])[1] || "";
+  if(!area){
+    const i=flat.indexOf("専有面積");
+    if(i>=0) area=(flat.slice(i,i+60).match(/([0-9]+(?:\.[0-9]+)?)\s*(?:㎡|平米|m2|m²)/)||[])[1]||"";
+  }
+  const layout=(flat.match(/\b([1-9][SLDK]{1,4}(?:\+[A-Z]{1,4})?)\b/)||[])[1]||"";
+  out.area = area && layout ? `${area}㎡ / ${layout}` : (area ? `${area}㎡` : layout);
+  const dir=(flat.match(/([東西南北]{1,2})\s*向き/)||[])[1];
+  const fp=(flat.match(/([0-9]+)\s*階部分/)||[])[1];
+  out.unit=[fp?fp+"階":"",dir?dir+"向き":""].filter(Boolean).join(" ");
+  m=( _extRight(words,"建築") || flat ).match(/(\d{4})\s*年\s*(\d{1,2})\s*月/);
+  out.year = m ? `${m[1]}年${m[2]}月` : "";
+  const fb=(flat.match(/([0-9]+)\s*階建/)||[])[1];
+  out.floors = (fb&&fp) ? `${fp}階／${fb}階建` : (fb ? `${fb}階建` : "");
+  let mg=(_extRight(words,"管理費").match(/([0-9][0-9,，]*)\s*円/)||[])[1];
+  if(!mg) mg=(flat.match(/管理費[^0-9円]{0,14}([0-9][0-9,，]*)\s*円/)||[])[1];
+  out.mgmt = mg ? `月額${mg.replace(/，/g,",")}円` : "";
+  return out;
+}
+
+async function extractInfoClient(file){
+  const lib = await loadPdfJs();
+  const buf = await file.arrayBuffer();
+  const doc = await lib.getDocument({data:buf}).promise;
+  // ページ選択: 物件情報ラベルのヒット数で採点（同点なら文字数）
+  // ※複数物件が混在するPDFで、単なる文字数最大だと別ページを拾うため
+  const LABELS = ["物件名","価格","専有面積","管理費","所在","築","徒歩"];
+  let best = {score:-1, len:0, words:[], text:""};
+  for(let i=1;i<=doc.numPages;i++){
+    const page = await doc.getPage(i);
+    const tc = await page.getTextContent();
+    const vh = page.view[3];
+    const words=[]; let text="";
+    for(const it of tc.items){
+      const t=(it.str||"").trim();
+      if(!t) continue;
+      const h = it.height || Math.abs(it.transform[3]) || 10;
+      const x0 = it.transform[4], y1 = vh - it.transform[5], y0 = y1 - h;
+      words.push([x0, y0, x0 + (it.width || t.length*h*0.9), y1, t]);
+      text += t + "\n";
+    }
+    const score = LABELS.filter(l=>text.includes(l)).length + (text.includes("物件名")?2:0);
+    if(score > best.score || (score === best.score && text.length > best.len)){
+      best = {score, len:text.length, words, text};
+    }
+  }
+  return computeExtract(best.words, best.text);
+}
+
+async function geocodeGsi(addr){
+  const r = await fetch("https://msearch.gsi.go.jp/address-search/AddressSearch?q=" + encodeURIComponent(addr));
+  const j = await r.json();
+  if(j && j[0] && j[0].geometry && j[0].geometry.coordinates){
+    const [lng, lat] = j[0].geometry.coordinates;
+    return {lat, lng};
+  }
+  return null;
+}
+
 /* ---- 住所からピンを取得してプロパティに反映（PDF自動抽出の住所を使用） ---- */
 function geocodeAndPin(prop){
   if(!prop.addr || !(window.google && google.maps && google.maps.Geocoder)) return;
@@ -1198,7 +1345,28 @@ $("addSubmit").onclick = async () => {
       $("addSubmit").disabled = false;
     }
   } else {
+    // バックエンド未接続: PDF埋め込み＋ブラウザ内で情報抽出（pdf.js）
     figure = pendingPdf.dataUrl;
+    if(pendingPdf.file){
+      $("addSubmit").disabled = true;
+      setMsg("図面から物件情報を読み取り中…");
+      try{
+        ext = await extractInfoClient(pendingPdf.file) || {};
+        setMsg("");
+      }catch(err){
+        ext = {};
+        setMsg("情報の自動読み取りに失敗しました（物件は追加されます）。","err");
+      }finally{
+        $("addSubmit").disabled = false;
+      }
+    }
+  }
+  // 座標が未解決なら国土地理院ジオコーダ（無料・キー不要）で解決
+  if(ext.addr && typeof ext.lat !== "number"){
+    try{
+      const ll = await geocodeGsi(ext.addr);
+      if(ll){ ext.lat = ll.lat; ext.lng = ll.lng; }
+    }catch(e){ /* ピンなしで続行（Googleジオコーダにフォールバック） */ }
   }
 
   const name = ext.name || figureName.replace(/\.pdf$/i, "");
