@@ -212,11 +212,33 @@
   .cr-hint{font-size:12px;color:var(--muted)}
   .cr-hint.err{color:#b3402f}
   .fac-chips{display:block}
-  .fac-group-t{display:flex;align-items:center;gap:6px;font-family:"IBM Plex Mono",monospace;
-    font-size:10px;letter-spacing:.06em;color:var(--muted);margin:14px 0 8px}
+  .fac-group-t{display:flex;align-items:center;gap:7px;width:100%;text-align:left;
+    font-family:inherit;font-size:12.5px;font-weight:500;color:var(--ink);
+    background:var(--white);border:1px solid var(--line);border-radius:5px;
+    padding:8px 11px;margin:8px 0 0;cursor:pointer;transition:.15s}
   .fac-group-t:first-child{margin-top:0}
-  .fac-group-t .fg-dot{width:8px;height:8px;border-radius:2px;flex:none}
-  .fac-chips-row{display:flex;flex-wrap:wrap;gap:7px}
+  .fac-group-t:hover{border-color:var(--accent)}
+  .fac-group-t .fg-dot{width:9px;height:9px;border-radius:2px;flex:none}
+  .fac-group-t .fg-arw{margin-left:auto;font-size:10px;color:var(--muted);transition:transform .18s}
+  .fac-group-t.open .fg-arw{transform:rotate(90deg)}
+  .fac-group-t .fg-n{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--accent)}
+  .fac-chips-row{display:none;flex-wrap:wrap;gap:7px;padding:9px 2px 4px}
+  .fac-chips-row.open{display:flex}
+  .fac-chip .cb{width:13px;height:13px;flex:none;border:1.5px solid var(--line);border-radius:3px;
+    background:var(--white);display:inline-flex;align-items:center;justify-content:center;
+    font-size:10px;line-height:1;color:#fff;transition:.15s}
+  .fac-chip.active .cb{border-color:rgba(255,255,255,.85)}
+  .dest-clear{white-space:nowrap;font-family:inherit;font-size:12px;padding:9px 12px;border-radius:4px;
+    border:1px solid var(--line);background:var(--white);color:var(--muted);cursor:pointer;transition:.15s}
+  .dest-clear:hover{border-color:var(--muted);color:var(--ink)}
+  .gm-transit-link{display:inline-flex;align-items:center;gap:6px;margin-top:10px;
+    font-size:13px;padding:9px 14px;border-radius:4px;text-decoration:none;
+    background:var(--navy);color:var(--ivory);transition:.15s}
+  .gm-transit-link:hover{background:var(--navy-2)}
+  .wl-copy{width:100%;font-family:inherit;font-size:13px;padding:10px;border-radius:4px;
+    border:1px solid var(--go);background:var(--white);color:var(--go);cursor:pointer;
+    transition:.15s;margin-bottom:10px}
+  .wl-copy:hover{background:var(--go);color:#fff}
   .fac-chip{display:inline-flex;align-items:center;gap:7px;font-family:inherit;font-size:12.5px;
     padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--white);
     color:var(--ink);cursor:pointer;transition:.15s}
@@ -375,11 +397,8 @@
 <div class="controls">
   <div class="wrap controls-inner">
     <div class="filter-group">
-      <span class="filter-label">提案回次</span>
-      <button class="chip active" data-round="all">すべて<span class="n" id="nAll"></span></button>
-      <button class="chip" data-round="1">第1回<span class="n" id="n1"></span></button>
-      <button class="chip" data-round="2">第2回<span class="n" id="n2"></span></button>
-      <button class="chip" data-round="3">第3回<span class="n" id="n3"></span></button>
+      <span class="filter-label">提案日</span>
+      <span id="roundChips" style="display:contents"></span>
     </div>
     <div class="spacer"></div>
     <button class="add-btn" id="openAdd">＋ 物件を追加</button>
@@ -417,6 +436,7 @@
             <div class="dest-row">
               <input type="text" id="destInput" placeholder="例：東京駅／丸の内2-4-1 など目的地を入力">
               <button id="destBtn">検索</button>
+              <button id="destClear" class="dest-clear" title="経路を消す">クリア</button>
             </div>
             <div class="mode-chips">
               <button class="mode-chip active" data-mode="TRANSIT">🚃 電車</button>
@@ -475,6 +495,7 @@
   </div>
   <div class="drawer-body" id="wlBody"></div>
   <div class="drawer-foot">
+    <button class="wl-copy" id="wlCopy">物件名と価格をコピー</button>
     <div class="note">このリストは担当エージェントと共有する内見希望の控えです。<br>ページを閉じると保存されないため、確定後はエージェントへお伝えください。</div>
   </div>
 </aside>
@@ -588,7 +609,19 @@ const FACILITY_GROUPS = [
 ];
 /* key→定義 の逆引き（色は大カテゴリから継承） */
 const FAC_BY_KEY = {};
-FACILITY_GROUPS.forEach(g => g.items.forEach(f => { f.color = g.color; FAC_BY_KEY[f.key] = f; }));
+/* 色の濃淡: 同カテゴリ内の項目を暗→明のグラデーションで塗り分け（複数選択時に見分けるため） */
+function shadeColor(hex, f){
+  const n = parseInt(hex.slice(1), 16);
+  let r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+  if(f >= 0){ r+=(255-r)*f; g+=(255-g)*f; b+=(255-b)*f; }
+  else { r*=(1+f); g*=(1+f); b*=(1+f); }
+  return "#"+[r,g,b].map(x=>Math.round(x).toString(16).padStart(2,"0")).join("");
+}
+FACILITY_GROUPS.forEach(g => g.items.forEach((f, i) => {
+  const n = g.items.length;
+  f.color = shadeColor(g.color, n>1 ? (-0.26 + 0.52*i/(n-1)) : 0);
+  FAC_BY_KEY[f.key] = f;
+}));
 
 /* ====== state ====== */
 let currentRound = "all";
@@ -608,12 +641,27 @@ const $ = id => document.getElementById(id);
 $("dateStamp").textContent =
   new Intl.DateTimeFormat("ja-JP",{year:"numeric",month:"long",day:"numeric"}).format(new Date());
 
-/* ====== counts ====== */
-function roundCount(r){ return PROPERTIES.filter(p=>String(p.round)===String(r)).length; }
-$("nAll").textContent = PROPERTIES.length;
-$("n1").textContent = roundCount(1);
-$("n2").textContent = roundCount(2);
-$("n3").textContent = roundCount(3);
+/* ====== 提案日フィルタ（アップロード日ごとにチップを動的生成） ====== */
+const fmtDate = ymd => ymd ? `${ymd.slice(4,6)}/${ymd.slice(6,8)}` : "";
+function buildRoundChips(){
+  const box = $("roundChips");
+  const dates = [...new Set(PROPERTIES.map(p=>p.uploadDate).filter(Boolean))].sort().reverse();
+  if(currentRound !== "all" && !dates.includes(currentRound)) currentRound = "all";
+  let html = `<button class="chip${currentRound==="all"?" active":""}" data-round="all">すべて<span class="n">${PROPERTIES.length}</span></button>`;
+  dates.forEach(d=>{
+    const n = PROPERTIES.filter(p=>p.uploadDate===d).length;
+    html += `<button class="chip${currentRound===d?" active":""}" data-round="${d}">${fmtDate(d)}<span class="n">${n}</span></button>`;
+  });
+  box.innerHTML = html;
+  box.querySelectorAll(".chip").forEach(c=>{
+    c.onclick = ()=>{
+      currentRound = c.dataset.round;
+      buildRoundChips();
+      renderCards();
+      updateMarkerVisibility();
+    };
+  });
+}
 
 /* ====== icons ====== */
 const icPin = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>';
@@ -651,7 +699,7 @@ document.querySelectorAll(".ptable th.sortable").forEach(th=>{
 function renderCards(){
   const box = $("cards");   // <tbody>
   box.innerHTML = "";
-  let list = PROPERTIES.filter(p=> currentRound==="all" || String(p.round)===String(currentRound));
+  let list = PROPERTIES.filter(p=> currentRound==="all" || p.uploadDate===currentRound);
   if(sortKey){
     list = [...list].sort((a,b)=> (sortValue(a,sortKey)-sortValue(b,sortKey))*sortDir);
   }
@@ -671,7 +719,7 @@ function renderCards(){
         <div class="pn-name">${p.name}${p.isNew?' <span class="badge-new">追加</span>':''}</div>
         ${sub?`<div class="pn-sub" title="${sub}">${sub}</div>`:''}
       </td>
-      <td class="c-round"><span class="rt">第${p.round}回</span>${p.proposalDate?`<div class="rt-date">${p.proposalDate}</div>`:''}</td>
+      <td class="c-round"><span class="rt">${p.proposalDate || fmtDate(p.uploadDate) || "—"}</span></td>
       <td class="c-price">${p.price.replace(/(億|万円)/g,'<span class="yen">$1</span>')}</td>
       <td class="c-layout">${layoutVal}</td>
       <td class="c-area">${areaVal}</td>
@@ -714,16 +762,7 @@ function bindCardEvents(){
   });
 }
 
-/* ====== round filter ====== */
-document.querySelectorAll(".chip").forEach(c=>{
-  c.onclick=()=>{
-    document.querySelectorAll(".chip").forEach(x=>x.classList.remove("active"));
-    c.classList.add("active");
-    currentRound = c.dataset.round;
-    renderCards();
-    updateMarkerVisibility();
-  };
-});
+/* ====== round filter（チップは buildRoundChips が動的生成） ====== */
 
 /* ====== wishlist ====== */
 function toggleWish(id){
@@ -760,12 +799,54 @@ function closeDrawer(){
 $("closeWishlist").onclick=closeDrawer;
 $("drawerScrim").onclick=closeDrawer;
 
+/* ---- 内見希望リストのコピー（物件名と価格） ---- */
+$("wlCopy").onclick = async () => {
+  const lines = PROPERTIES.filter(p=>wishlist.has(p.id))
+    .map(p=>`${p.name}${p.unit?`（${p.unit}）`:""}　${p.price||""}`.trim());
+  const btn = $("wlCopy");
+  if(!lines.length){
+    btn.textContent = "リストが空です";
+    setTimeout(()=>btn.textContent="物件名と価格をコピー", 1600);
+    return;
+  }
+  const text = lines.join("\n");
+  let ok = false;
+  try{
+    await navigator.clipboard.writeText(text);
+    ok = true;
+  }catch(e){
+    // フォールバック（クリップボードAPI不可の環境）
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta);
+    ta.select();
+    try{ ok = document.execCommand("copy"); }catch(_){}
+    ta.remove();
+  }
+  btn.textContent = ok ? `コピーしました（${lines.length}件）` : "コピーできませんでした";
+  setTimeout(()=>btn.textContent="物件名と価格をコピー", 1800);
+};
+
 /* ====== PDF modal ====== */
 function openPdf(id){
   const p = PROPERTIES.find(x=>x.id===id);
   $("pdfName").textContent = `${p.name} ${p.unit} — 図面`;
-  $("pdfFrame").src = p.figure;
-  $("pdfOpen").href = p.figureView || p.figure;
+  let src = p.figure;
+  // 埋め込みPDF（data:URL）はChrome等のiframeでブロックされるため blob URL に変換して表示
+  if(src.startsWith("data:")){
+    if(!p._blobUrl){
+      try{
+        const bin = atob(src.split(",")[1]);
+        const arr = new Uint8Array(bin.length);
+        for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+        p._blobUrl = URL.createObjectURL(new Blob([arr], {type:"application/pdf"}));
+      }catch(e){ /* 変換失敗時は data: のまま試す */ }
+    }
+    if(p._blobUrl) src = p._blobUrl;
+  }
+  // 複数物件PDFなら該当ページを開く（Driveプレビューはページ指定非対応のため除外）
+  if(p.figurePage > 1 && !/drive\.google\.com/.test(src)) src += "#page=" + p.figurePage;
+  $("pdfFrame").src = src;
+  $("pdfOpen").href = p.figureView || src;
   $("pdfScrim").classList.add("open");
 }
 function closePdf(){
@@ -781,7 +862,7 @@ function openInfo(p){
   if(!infoWindow) return;
   const idx = PROPERTIES.indexOf(p)+1;
   infoWindow.setContent(`<div class="gm-iw">
-    <div class="gm-r">第${p.round}回提案 ・ ${idx}</div>
+    <div class="gm-r">${(p.proposalDate || fmtDate(p.uploadDate)) ? (p.proposalDate || fmtDate(p.uploadDate)) + " 提案 ・ " : ""}${idx}</div>
     <h5>${p.name}</h5>
     <div style="font-size:11px;color:#6b6558;margin-bottom:2px">${p.unit} / ${p.area}</div>
     <div class="gm-p">${p.price}</div>
@@ -804,12 +885,15 @@ window.selectFromMap=(id)=>selectProperty(id);
 function updateMarkerVisibility(){
   PROPERTIES.forEach(p=>{
     if(markers[p.id]){
-      const show = currentRound==="all" || String(p.round)===String(currentRound);
+      const show = currentRound==="all" || p.uploadDate===currentRound;
       markers[p.id].setMap(show?gmap:null);
     }
   });
 }
 window.initMap = function(){
+  // 読み込み完了: タイムアウト等で出たフォールバック表示を解除
+  $("map").classList.remove("hidden");
+  $("mapFallback").classList.add("hidden");
   const center = {lat:35.6435, lng:139.775};
   gmap = new google.maps.Map($("map"),{
     center, zoom:13, mapTypeControl:false, streetViewControl:false, fullscreenControl:false,
@@ -894,7 +978,8 @@ function selectProperty(id){
   $("facNote").textContent = "気になるカテゴリを選ぶと、地図にピンが表示されます。";
 
   const idx = PROPERTIES.indexOf(p)+1;
-  $("dsRound").textContent = `第${p.round}回提案 ・ 物件 ${idx}`;
+  const pd = p.proposalDate || fmtDate(p.uploadDate);
+  $("dsRound").textContent = `${pd ? pd + " 提案 ・ " : ""}物件 ${idx}`;
   $("dsName").textContent = `${p.name}${p.unit?" ／ "+p.unit:""}`;
 
   openDetail();
@@ -926,6 +1011,11 @@ $("dsClose").onclick = closeDetail;
 
 /* ---- 経路（距離・所要時間）---- */
 $("destBtn").onclick = computeRoute;
+$("destClear").onclick = ()=>{
+  $("destInput").value = "";
+  clearRoute();
+  $("commuteResult").innerHTML = "";
+};
 $("destInput").addEventListener("keydown", e=>{ if(e.key==="Enter") computeRoute(); });
 document.querySelectorAll(".mode-chip").forEach(c=>{
   c.onclick=()=>{
@@ -939,12 +1029,30 @@ document.querySelectorAll(".mode-chip").forEach(c=>{
 function clearRoute(){
   if(directionsRenderer) directionsRenderer.setMap(null);
 }
+/* 電車経路: Google Directions API は日本の公共交通に非対応のため、
+   Googleマップ本体（電車対応）を新しいタブで開くリンクを出す */
+function transitFallback(p, dest){
+  const url = "https://www.google.com/maps/dir/?api=1"
+    + "&origin=" + encodeURIComponent(p.lat + "," + p.lng)
+    + "&destination=" + encodeURIComponent(dest)
+    + "&travelmode=transit";
+  $("commuteResult").innerHTML = `
+    <div class="cr-hint">電車の経路はこの地図内では表示できないため、Googleマップでご確認ください。</div>
+    <a class="gm-transit-link" href="${url}" target="_blank" rel="noopener">🚃 Googleマップで電車経路を見る ↗</a>`;
+}
 function computeRoute(){
   const p = PROPERTIES.find(x=>x.id===selectedId);
   const dest = $("destInput").value.trim();
   if(!p) return;
   if(!dest){ $("commuteResult").innerHTML = `<div class="cr-hint">目的地を入力してください。</div>`; return; }
   if(!directionsService){ $("commuteResult").innerHTML = `<div class="cr-hint err">地図が読み込まれていません。</div>`; return; }
+
+  // 電車はAPI非対応（日本）→ 最初からGoogleマップへのリンクを提示
+  if(travelMode==="TRANSIT"){
+    clearRoute();
+    transitFallback(p, dest);
+    return;
+  }
 
   $("commuteResult").innerHTML = `<div class="cr-hint">経路を計算中…</div>`;
   const req = {
@@ -953,7 +1061,6 @@ function computeRoute(){
     travelMode: google.maps.TravelMode[travelMode],
     region:"jp"
   };
-  if(travelMode==="TRANSIT"){ req.transitOptions = { departureTime: new Date() }; }
 
   directionsService.route(req, (res, status)=>{
     if(status==="OK" && res.routes[0]){
@@ -982,21 +1089,36 @@ function buildFacChips(){
   const box = $("facChips");
   box.innerHTML = "";
   FACILITY_GROUPS.forEach(g=>{
-    const gt = document.createElement("div");
+    // 大カテゴリ（クリックで小カテゴリを開閉）
+    const gt = document.createElement("button");
     gt.className = "fac-group-t";
-    gt.innerHTML = `<span class="fg-dot" style="background:${g.color}"></span>${g.group}`;
+    gt.innerHTML = `<span class="fg-dot" style="background:${g.color}"></span>${g.group}` +
+      `<span class="fg-n" data-gn="${g.group}"></span><span class="fg-arw">▶</span>`;
     box.appendChild(gt);
     const row = document.createElement("div");
     row.className = "fac-chips-row";
+    gt.onclick = ()=>{
+      gt.classList.toggle("open");
+      row.classList.toggle("open");
+    };
+    // 小カテゴリ（チェックボックスで複数選択・色は濃淡で塗り分け）
     g.items.forEach(f=>{
       const b = document.createElement("button");
       b.className = "fac-chip";
       b.dataset.fac = f.key;
-      b.innerHTML = `<span class="dot" style="background:${f.color}"></span>${f.label}<span class="fc-n"></span>`;
+      b.innerHTML = `<span class="cb"></span><span class="dot" style="background:${f.color}"></span>${f.label}<span class="fc-n"></span>`;
       b.onclick = ()=>toggleFacility(f.key);
       row.appendChild(b);
     });
     box.appendChild(row);
+  });
+  updateGroupCounts();
+}
+function updateGroupCounts(){
+  FACILITY_GROUPS.forEach(g=>{
+    const n = g.items.filter(f=>activeFac.has(f.key)).length;
+    const el = document.querySelector(`[data-gn="${g.group}"]`);
+    if(el) el.textContent = n ? `${n}件選択中` : "";
   });
 }
 function updateFacChip(key, count){
@@ -1005,19 +1127,25 @@ function updateFacChip(key, count){
   if(!chip) return;
   const n = chip.querySelector(".fc-n");
   const dot = chip.querySelector(".dot");
+  const cb = chip.querySelector(".cb");
   if(activeFac.has(key)){
     chip.classList.add("active");
     chip.style.background = f.color;
     chip.style.borderColor = f.color;
+    chip.style.color = "#fff";
     dot.style.background = "#fff";
+    if(cb){ cb.textContent = "✓"; cb.style.background = "rgba(255,255,255,.25)"; }
     n.textContent = (count==null) ? "" : (count==="…" ? " …" : " "+count);
   } else {
     chip.classList.remove("active");
     chip.style.background = "";
     chip.style.borderColor = "";
+    chip.style.color = "";
     dot.style.background = f.color;
+    if(cb){ cb.textContent = ""; cb.style.background = ""; }
     n.textContent = "";
   }
+  updateGroupCounts();
 }
 function removeFacMarkers(key){
   (facMarkers[key]||[]).forEach(m=>m.setMap(null));
@@ -1054,20 +1182,22 @@ function placeFacMarkers(key, places){
 async function searchFacility(f, center){
   const base = {
     fields:["displayName","location","formattedAddress","rating","userRatingCount"],
-    maxResultCount:20
+    maxResultCount:20                    // Places API の上限
   };
   if(f.type){
     const { places } = await PlaceCls.searchNearby({
       ...base,
       locationRestriction:{ center, radius:800 },
-      includedTypes:[f.type]
+      includedTypes:[f.type],
+      rankPreference:"DISTANCE"          // 人気順でなく近い順に取り切る（網羅性向上）
     });
     return places || [];
   }
   const { places } = await PlaceCls.searchByText({
     ...base,
     textQuery:f.keyword,
-    locationBias:{ center, radius:800 }
+    locationBias:{ center, radius:800 },
+    rankPreference:"DISTANCE"
   });
   return places || [];
 }
@@ -1168,9 +1298,14 @@ const EXT_STOP = new Set(["物件種別","物件名","価格","所在","所在�
   "管理費","修繕積立金","駐車場","自転車","バイク","設備","現況","引渡時期","ペット","権利",
   "敷地面積","共有持分","用途地域"]);
 const _stripL = s => s.replace(/[：:]+$/,"");
+/* ラベル一致（「マンション・名称」のような複合表記にも対応） */
+const _lblMatch = (t,label) => {
+  const s=_stripL(t);
+  return s===label || s.startsWith(label) || s.endsWith("・"+label) || s.endsWith(label);
+};
 
 function _extRight(words, label, maxGap=90){
-  const cands = words.filter(w => _stripL(w[4])===label || w[4].startsWith(label));
+  const cands = words.filter(w => _lblMatch(w[4],label));
   for(const lw of cands){
     const ly=(lw[1]+lw[3])/2, lh=Math.max(lw[3]-lw[1],6);
     const row=words.filter(w => w!==lw && w[0]>=lw[2]-2 && Math.abs((w[1]+w[3])/2-ly)<=lh*0.75)
@@ -1187,7 +1322,7 @@ function _extRight(words, label, maxGap=90){
   return "";
 }
 function _extBelow(words, label, maxGap=90){
-  const cands = words.filter(w => _stripL(w[4])===label || w[4].startsWith(label));
+  const cands = words.filter(w => _lblMatch(w[4],label));
   for(const lw of cands){
     const seeds=words.filter(w => w[1]>=lw[3]-2 && w[1]-lw[3]<=28 && w[0]>=lw[0]-12 && w[0]-lw[2]<=240);
     if(!seeds.length) continue;
@@ -1210,23 +1345,63 @@ function _extBelow(words, label, maxGap=90){
   return "";
 }
 const _extClean = s => s.replace(/[（(]税込[)）]/g,"").replace(/[ \t　]+/g,"").replace(/^[ :：\n]+|[ :：\n]+$/g,"");
+/* 物件名の後処理: 隣接セル由来の「48階」等の階数・ラベル語を除去 */
+const _cleanName = s => _extClean(s)
+  .replace(/[0-9０-９]+階.*$/,"")
+  .replace(/(所在|交通|価格|名称|物件名|物件種別)+$/,"").trim();
+
+const NAME_KW = ["タワー","レジデンス","マンション","ハウス","コート","ヒルズ","パレス",
+  "メゾン","コーポ","ガーデン","シティ","プレイス","ステージ","パーク","テラス"];
+/* ラベルが無いマイソク向け: 大きい文字の行を物件名候補に（行帯クラスタ→キーワード優先） */
+function _nameByBiggest(words){
+  const cands = words.filter(w => w[4].trim()
+    && !/[0-9０-９]/.test(w[4])
+    && !/万円|徒歩|駅|円|㎡|平米|会社|〒|TEL|FAX|免許|取引|媒介/.test(w[4]));
+  if(!cands.length) return "";
+  cands.sort((a,b)=>a[1]-b[1]||a[0]-b[0]);
+  const lines=[];
+  for(const w of cands){
+    const h=Math.max(w[3]-w[1],6);
+    const ln=lines.find(l=>Math.abs(w[1]-l.y0)<=h*0.7);
+    if(ln) ln.ws.push(w); else lines.push({y0:w[1],ws:[w]});
+  }
+  const rows=[];
+  for(const ln of lines){
+    const ws=ln.ws.sort((a,b)=>a[0]-b[0]);
+    const txt=ws.map(w=>w[4]).join("").trim();
+    if(txt.length<4) continue;
+    rows.push({txt, h:Math.max(...ws.map(w=>w[3]-w[1])), y:ln.y0});
+  }
+  if(!rows.length) return "";
+  const hmax=Math.max(...rows.map(r=>r.h));
+  const big=rows.filter(r=>r.h>=hmax*0.8);
+  const kw=big.filter(r=>NAME_KW.some(k=>r.txt.includes(k)));
+  const pool=kw.length?kw:big;
+  return pool.reduce((a,b)=>a.y<=b.y?a:b).txt;
+}
 
 function computeExtract(words, text){
   const flat = text.replace(/\s+/g," ");
   const out = {};
-  out.name = _extClean(_extRight(words,"物件名") || _extBelow(words,"物件名"));
+  let name = "";
+  for(const label of ["物件名","名称"]){
+    name = _extRight(words,label) || _extBelow(words,label);
+    if(name) break;
+  }
+  if(!_cleanName(name)) name = _nameByBiggest(words);
+  out.name = _cleanName(name);
   let praw = _extRight(words,"価格");
   if(!/[0-9]/.test(praw)) praw = _extBelow(words,"価格");
   let m = _extClean(praw).match(/([0-9][0-9,，\.]*)\s*(億)?\s*(万?円)?/);
   out.price = (m && m[1]) ? (m[1].replace(/，/g,",") + (((m[2]||"")+(m[3]||"")) || "万円")) : "";
-  // 住所（〒直後・営業所near を除外して最長候補）
-  const addrRe = /(?:東京都|北海道|京都府|大阪府|[一-龥]{2,3}県)?[一-龥ぁ-んァ-ヶa-zA-Z0-9]{1,8}[市区町村][一-龥ぁ-んァ-ヶa-zA-Z0-9]{0,15}(?:\d+丁目)?[\d\-－ー]*/g;
+  // 住所（〒直後・営業所near を除外して最長候補）※全角数字・全角ハイフン対応（JSの\dは半角のみ）
+  const addrRe = /(?:東京都|北海道|京都府|大阪府|[一-龥]{2,3}県)?[一-龥ぁ-んァ-ヶa-zA-Z0-9０-９]{1,8}[市区町村][一-龥ぁ-んァ-ヶa-zA-Z0-9０-９]{0,15}(?:[0-9０-９]+丁目)?[0-9０-９\-－ー‐]*/g;
   const cands=[]; let am;
   while((am=addrRe.exec(flat))!==null){
     const idx=am.index, c=am[0];
     const ctx=flat.slice(Math.max(0,idx-12),idx);
     if(ctx.includes("〒") || flat.slice(idx,idx+c.length+6).includes("営業所")) continue;
-    if(!/\d/.test(c)) continue;                       // 番地なしは住所とみなさない
+    if(!/[0-9０-９]/.test(c)) continue;               // 番地なしは住所とみなさない
     if(/所有者|管理|月額|専有|徒歩/.test(c)) continue;  // 「区分所有者」等の誤マッチ除外
     cands.push(c);
   }
@@ -1246,7 +1421,10 @@ function computeExtract(words, text){
   out.unit=[fp?fp+"階":"",dir?dir+"向き":""].filter(Boolean).join(" ");
   m=( _extRight(words,"建築") || flat ).match(/(\d{4})\s*年\s*(\d{1,2})\s*月/);
   out.year = m ? `${m[1]}年${m[2]}月` : "";
-  const fb=(flat.match(/([0-9]+)\s*階建/)||[])[1];
+  // 階数（「地下1階建」誤取得を避け、地上表記を優先・最大値を採用）
+  const g = [...flat.matchAll(/地上\s*([0-9]+)\s*階/g)].map(x=>+x[1]);
+  const bAll = g.length ? g : [...flat.matchAll(/([0-9]+)\s*階建/g)].map(x=>+x[1]);
+  const fb = bAll.length ? Math.max(...bAll) : null;
   out.floors = (fb&&fp) ? `${fp}階／${fb}階建` : (fb ? `${fb}階建` : "");
   let mg=(_extRight(words,"管理費").match(/([0-9][0-9,，]*)\s*円/)||[])[1];
   if(!mg) mg=(flat.match(/管理費[^0-9円]{0,14}([0-9][0-9,，]*)\s*円/)||[])[1];
@@ -1254,14 +1432,17 @@ function computeExtract(words, text){
   return out;
 }
 
-async function extractInfoClient(file){
+const _filledCount = d => Object.values(d).filter(Boolean).length;
+
+/* 複数物件が混在するPDF（物件リスト等）対応:
+   ページごとに抽出して物件リストを返す。
+   - テキストの無いページ（写真のみ等）はスキップ
+   - 物件名が取れないページは直前の物件の空欄を補完（2ページ構成のマイソク）  */
+async function extractAllClient(file){
   const lib = await loadPdfJs();
   const buf = await file.arrayBuffer();
   const doc = await lib.getDocument({data:buf}).promise;
-  // ページ選択: 物件情報ラベルのヒット数で採点（同点なら文字数）
-  // ※複数物件が混在するPDFで、単なる文字数最大だと別ページを拾うため
-  const LABELS = ["物件名","価格","専有面積","管理費","所在","築","徒歩"];
-  let best = {score:-1, len:0, words:[], text:""};
+  const results = [];
   for(let i=1;i<=doc.numPages;i++){
     const page = await doc.getPage(i);
     const tc = await page.getTextContent();
@@ -1275,27 +1456,52 @@ async function extractInfoClient(file){
       words.push([x0, y0, x0 + (it.width || t.length*h*0.9), y1, t]);
       text += t + "\n";
     }
-    const score = LABELS.filter(l=>text.includes(l)).length + (text.includes("物件名")?2:0);
-    if(score > best.score || (score === best.score && text.length > best.len)){
-      best = {score, len:text.length, words, text};
+    if(text.trim().length < 30) continue;         // 写真だけのページ等
+    const info = computeExtract(words, text);
+    if(_filledCount(info) < 2) continue;           // 物件情報がほぼ無いページ
+    if(info.name){
+      info.page = i;
+      results.push(info);
+    } else if(results.length){
+      const prev = results[results.length-1];
+      for(const k of Object.keys(info)){ if(info[k] && !prev[k]) prev[k] = info[k]; }
+    } else {
+      info.page = i;
+      results.push(info);
     }
   }
-  return computeExtract(best.words, best.text);
+  return results;
 }
 
-async function geocodeGsi(addr){
-  const r = await fetch("https://msearch.gsi.go.jp/address-search/AddressSearch?q=" + encodeURIComponent(addr));
-  const j = await r.json();
-  if(j && j[0] && j[0].geometry && j[0].geometry.coordinates){
-    const [lng, lat] = j[0].geometry.coordinates;
-    return {lat, lng};
+async function geocodeGsi(addr, retry = 2){
+  try{
+    const r = await fetch("https://msearch.gsi.go.jp/address-search/AddressSearch?q=" + encodeURIComponent(addr));
+    const j = await r.json();
+    if(j && j[0] && j[0].geometry && j[0].geometry.coordinates){
+      const [lng, lat] = j[0].geometry.coordinates;
+      return {lat, lng};
+    }
+  }catch(e){ /* 一時的な失敗はリトライ */ }
+  if(retry > 0){
+    await new Promise(res=>setTimeout(res, 350));
+    return geocodeGsi(addr, retry - 1);
   }
   return null;
 }
 
-/* ---- 住所からピンを取得してプロパティに反映（PDF自動抽出の住所を使用） ---- */
-function geocodeAndPin(prop){
-  if(!prop.addr || !(window.google && google.maps && google.maps.Geocoder)) return;
+/* ---- 住所からピンを取得してプロパティに反映（GSI再試行 → Googleジオコーダ） ---- */
+async function geocodeAndPin(prop){
+  if(!prop.addr) return;
+  try{
+    const ll = await geocodeGsi(prop.addr);
+    if(ll){
+      prop.lat = ll.lat; prop.lng = ll.lng;
+      addMarker(prop);
+      if(gmap){ gmap.panTo({lat:prop.lat, lng:prop.lng}); }
+      return;
+    }
+  }catch(e){ /* Googleジオコーダへフォールバック */ }
+  if(!(window.google && google.maps && google.maps.Geocoder)) return;
   new google.maps.Geocoder().geocode({ address: prop.addr, region:"jp" }, (res, status) => {
     if(status==="OK" && res[0]){
       const loc = res[0].geometry.location;
@@ -1307,19 +1513,19 @@ function geocodeAndPin(prop){
   });
 }
 
-/* ---- submit new property（PDFのみ・情報は自動抽出） ---- */
+/* ---- submit new properties（PDFのみ・情報は自動抽出。複数物件PDFは全件登録） ---- */
 $("addSubmit").onclick = async () => {
   if(!pendingPdf){ setMsg("図面PDFを添付してください。","err"); return; }
 
   // 図面PDFの扱い:
   //  - BACKEND_URL 設定時 … バックエンドで obi消し→Drive2か所格納→物件情報を自動抽出
-  //  - 未設定時         … PDFをHTMLに埋め込み（物件名はファイル名・ピンなしのプレビュー動作）
+  //  - 未設定時         … PDFをHTMLに埋め込み＋ブラウザ内で抽出（pdf.js）
   let figure = "", figureView = "", proposalDate = "", uploadDate = "";
-  let ext = {};
+  let extList = [];
   const figureName = pendingPdf.filename;
 
+  $("addSubmit").disabled = true;
   if(BACKEND_URL && pendingPdf.file){
-    $("addSubmit").disabled = true;
     setMsg("図面から物件情報を読み取り、obi消し・Drive格納を実行中…");
     try{
       const fd = new FormData();
@@ -1335,72 +1541,82 @@ $("addSubmit").onclick = async () => {
       figureView = res.candidate.webViewLink || res.candidate.previewLink;
       proposalDate = res.proposalDate || "";
       uploadDate = res.date || "";
-      ext = res.extracted || {};
+      extList = res.extractedList || (res.extracted && Object.keys(res.extracted).length ? [res.extracted] : []);
       setMsg("Driveに格納しました（" + res.candidate.name + "）。", "ok");
     }catch(err){
       // 失敗しても作業を止めない: 図面はこのページに埋め込んでおく
       figure = pendingPdf.dataUrl;
       setMsg("Drive格納に失敗したため図面はページに埋め込みました: " + err.message, "err");
-    }finally{
-      $("addSubmit").disabled = false;
     }
   } else {
     // バックエンド未接続: PDF埋め込み＋ブラウザ内で情報抽出（pdf.js）
     figure = pendingPdf.dataUrl;
     if(pendingPdf.file){
-      $("addSubmit").disabled = true;
       setMsg("図面から物件情報を読み取り中…");
       try{
-        ext = await extractInfoClient(pendingPdf.file) || {};
+        extList = await extractAllClient(pendingPdf.file) || [];
         setMsg("");
       }catch(err){
-        ext = {};
+        extList = [];
         setMsg("情報の自動読み取りに失敗しました（物件は追加されます）。","err");
-      }finally{
-        $("addSubmit").disabled = false;
       }
     }
   }
-  // 座標が未解決なら国土地理院ジオコーダ（無料・キー不要）で解決
-  if(ext.addr && typeof ext.lat !== "number"){
-    try{
-      const ll = await geocodeGsi(ext.addr);
-      if(ll){ ext.lat = ll.lat; ext.lng = ll.lng; }
-    }catch(e){ /* ピンなしで続行（Googleジオコーダにフォールバック） */ }
+  // 提案日 = アップロード日（バックエンド未接続時はブラウザ側で採番）
+  if(!uploadDate){
+    const now = new Date();
+    const z = n => String(n).padStart(2, "0");
+    uploadDate = `${now.getFullYear()}${z(now.getMonth()+1)}${z(now.getDate())}`;
+    proposalDate = `${z(now.getMonth()+1)}/${z(now.getDate())}`;
   }
+  if(!extList.length) extList = [{}];   // 抽出ゼロでも1件は追加（ファイル名で）
 
-  const name = ext.name || figureName.replace(/\.pdf$/i, "");
-  const price = ext.price || "";
-  // マンションレビューはサイト内検索がJS駆動でGETリンク不可のため、
-  // Google のサイト内検索リンクを自動生成（該当物件の詳細ページに確実に到達できる）
-  const review = "https://www.google.com/search?q=" + encodeURIComponent(name + " site:mansion-review.jp");
+  // 座標が未解決なら国土地理院ジオコーダで解決（同一住所はキャッシュ）
+  const geoCache = {};
+  for(const ext of extList){
+    if(!ext.addr || typeof ext.lat === "number") continue;
+    if(!(ext.addr in geoCache)){
+      try{ geoCache[ext.addr] = await geocodeGsi(ext.addr); }catch(e){ geoCache[ext.addr] = null; }
+    }
+    const ll = geoCache[ext.addr];
+    if(ll){ ext.lat = ll.lat; ext.lng = ll.lng; }
+  }
+  $("addSubmit").disabled = false;
 
-  const prop = {
-    id: "added_" + Date.now(),
-    name,
-    unit: ext.unit || "",
-    round: currentRound !== "all" ? Number(currentRound) : 1,
-    price,
-    priceNum: parseInt(price.replace(/[^0-9]/g,"")) || 0,
-    addr: ext.addr || "",
-    lat: (typeof ext.lat === "number") ? ext.lat : NaN,
-    lng: (typeof ext.lng === "number") ? ext.lng : NaN,
-    access: ext.access || "",
-    area: ext.area || "",
-    year: ext.year || "",
-    floors: ext.floors || "",
-    mgmt: ext.mgmt || "",
-    figure,
-    figureView,
-    figureName,
-    proposalDate,   // アップロード日 mm/dd（提案回次の日付として表示）
-    uploadDate,     // yyyymmdd
-    review,
-    isNew: true
-  };
+  const baseId = Date.now();
+  const newProps = extList.map((ext, i) => {
+    const name = ext.name ||
+      (figureName.replace(/\.pdf$/i, "") + (extList.length > 1 && ext.page ? `（p${ext.page}）` : ""));
+    const price = ext.price || "";
+    // マンションレビューはサイト内検索がJS駆動でGETリンク不可のため、
+    // Google のサイト内検索リンクを自動生成（該当物件の詳細ページに確実に到達できる）
+    const review = "https://www.google.com/search?q=" + encodeURIComponent(name + " site:mansion-review.jp");
+    return {
+      id: "added_" + baseId + "_" + i,
+      name,
+      unit: ext.unit || "",
+      price,
+      priceNum: parseInt(price.replace(/[^0-9]/g,"")) || 0,
+      addr: ext.addr || "",
+      lat: (typeof ext.lat === "number") ? ext.lat : NaN,
+      lng: (typeof ext.lng === "number") ? ext.lng : NaN,
+      access: ext.access || "",
+      area: ext.area || "",
+      year: ext.year || "",
+      floors: ext.floors || "",
+      mgmt: ext.mgmt || "",
+      figure,
+      figureView,
+      figureName,
+      figurePage: ext.page || 0,   // 複数物件PDF内の該当ページ（1始まり）
+      proposalDate,   // アップロード日 mm/dd（提案回次の日付として表示）
+      uploadDate,     // yyyymmdd
+      review,
+      isNew: true
+    };
+  });
 
-  PROPERTIES.push(prop);
-  addedProps.push(prop);
+  newProps.forEach(p => { PROPERTIES.push(p); addedProps.push(p); });
 
   // reset dropzone
   pendingPdf = null;
@@ -1410,12 +1626,15 @@ $("addSubmit").onclick = async () => {
 
   closeAdd();
   renderCards();
-  if(isFinite(prop.lat) && isFinite(prop.lng)){
-    addMarker(prop);                      // バックエンドが座標まで解決済み
-    if(gmap) gmap.panTo({lat:prop.lat, lng:prop.lng});
-  } else {
-    geocodeAndPin(prop);                  // フォールバック: 住所からGoogleジオコーダで取得
-  }
+  let panned = false;
+  newProps.forEach(p => {
+    if(isFinite(p.lat) && isFinite(p.lng)){
+      addMarker(p);
+      if(!panned && gmap){ gmap.panTo({lat:p.lat, lng:p.lng}); panned = true; }
+    } else {
+      geocodeAndPin(p);   // フォールバック: 住所からGoogleジオコーダで取得
+    }
+  });
   refreshCounts();
   showSaveBar();
 };
@@ -1445,12 +1664,7 @@ function addMarker(p){
 }
 
 /* ---- refresh round-filter counts ---- */
-function refreshCounts(){
-  $("nAll").textContent = PROPERTIES.length;
-  $("n1").textContent = roundCount(1);
-  $("n2").textContent = roundCount(2);
-  $("n3").textContent = roundCount(3);
-}
+function refreshCounts(){ buildRoundChips(); }
 
 /* ---- save bar ---- */
 function showSaveBar(){
@@ -1465,6 +1679,7 @@ $("exportBtn").onclick = () => {
   const clean = PROPERTIES.map(p => {
     const o = {...p};
     delete o.isNew;
+    delete o._blobUrl;   // セッション内限定のURLは書き出さない
     return o;
   });
   const newData = "const PROPERTIES = " + JSON.stringify(clean, null, 2) + ";";
@@ -1499,6 +1714,7 @@ function renderLegend(){
 
 /* ====== init ====== */
 renderLegend();
+buildRoundChips();
 renderCards();
 renderWishlist();
 
@@ -1522,11 +1738,11 @@ function showMapUnavailable(msg, hideKey){
   s.onerror = ()=> showMapUnavailable(
     "このプレビュー環境では外部の地図を読み込めません。<br>地図・経路・周辺施設は、Netlify などに公開した本番ページで表示されます。", true);
   setTimeout(()=>{
-    if(!(window.google && window.google.maps)){
+    if(!gmap){
       showMapUnavailable(
         "このプレビュー環境では外部の地図を読み込めません。<br>地図・経路・周辺施設は、Netlify などに公開した本番ページで表示されます。", true);
     }
-  }, 3500);
+  }, 6000);
   document.head.appendChild(s);
 })();
 </script>
