@@ -1352,11 +1352,13 @@ const _cleanName = s => _extClean(s)
 
 const NAME_KW = ["タワー","レジデンス","マンション","ハウス","コート","ヒルズ","パレス",
   "メゾン","コーポ","ガーデン","シティ","プレイス","ステージ","パーク","テラス"];
+/* 業者名・店舗名らしき語（物件名として不採用） */
+const NAME_NG = /仲介|プラザ|ステップ|リハウス|センター|不動産|営業所|株式会社|住友|三井の/;
 /* ラベルが無いマイソク向け: 大きい文字の行を物件名候補に（行帯クラスタ→キーワード優先） */
 function _nameByBiggest(words){
   const cands = words.filter(w => w[4].trim()
     && !/[0-9０-９]/.test(w[4])
-    && !/万円|徒歩|駅|円|㎡|平米|会社|〒|TEL|FAX|免許|取引|媒介/.test(w[4]));
+    && !/万円|徒歩|駅|円|㎡|平米|会社|〒|TEL|FAX|免許|取引|媒介|仲介|プラザ|ステップ|リハウス|センター|不動産|営業所/.test(w[4]));
   if(!cands.length) return "";
   cands.sort((a,b)=>a[1]-b[1]||a[0]-b[0]);
   const lines=[];
@@ -1370,6 +1372,7 @@ function _nameByBiggest(words){
     const ws=ln.ws.sort((a,b)=>a[0]-b[0]);
     const txt=ws.map(w=>w[4]).join("").trim();
     if(txt.length<4) continue;
+    if(NAME_NG.test(txt)) continue;   // 業者フッター等の行は除外
     rows.push({txt, h:Math.max(...ws.map(w=>w[3]-w[1])), y:ln.y0});
   }
   if(!rows.length) return "";
@@ -1380,8 +1383,9 @@ function _nameByBiggest(words){
   return pool.reduce((a,b)=>a.y<=b.y?a:b).txt;
 }
 
-function computeExtract(words, text){
-  const flat = text.replace(/\s+/g," ");
+function computeExtract(words, text, isOcr){
+  // OCRページは日本語がスペース分割されるため、全スペース除去版で正規表現を掛ける
+  const flat = isOcr ? text.replace(/\s+/g,"") : text.replace(/\s+/g," ");
   const out = {};
   let name = "";
   for(const label of ["物件名","名称"]){
@@ -1389,11 +1393,23 @@ function computeExtract(words, text){
     if(name) break;
   }
   if(!_cleanName(name)) name = _nameByBiggest(words);
-  out.name = _cleanName(name);
+  name = _cleanName(name);
+  // OCRページは名前の信頼性が低い: 建物名らしいキーワードを含み、業者名らしくない場合のみ採用
+  if(isOcr && name && (!NAME_KW.some(k=>name.includes(k)) || NAME_NG.test(name))) name = "";
+  out.name = name;
   let praw = _extRight(words,"価格");
   if(!/[0-9]/.test(praw)) praw = _extBelow(words,"価格");
   let m = _extClean(praw).match(/([0-9][0-9,，\.]*)\s*(億)?\s*(万?円)?/);
   out.price = (m && m[1]) ? (m[1].replace(/，/g,",") + (((m[2]||"")+(m[3]||"")) || "万円")) : "";
+  if(!out.price){
+    // ラベル検出不可（OCRページ等）: 全文から「4億1,800万円」形式を拾う
+    m = flat.match(/([0-9][0-9,，]*億)?\s*([0-9][0-9,，]*)\s*万円/);
+    if(m) out.price = (m[1]||"").replace(/，/g,",") + m[2].replace(/，/g,",") + "万円";
+  } else if(!out.price.includes("億")){
+    // ラベル値が断片（例: OCRで「4」だけ）のことがある: 全文に「N億…」があればそちらを優先
+    m = flat.match(/([0-9][0-9,，]*)億\s*([0-9][0-9,，]*)?\s*万?円?/);
+    if(m) out.price = m[1].replace(/，/g,",") + "億" + (m[2] ? m[2].replace(/，/g,",") + "万円" : "円");
+  }
   // 住所（〒直後・営業所near を除外して最長候補）※全角数字・全角ハイフン対応（JSの\dは半角のみ）
   const addrRe = /(?:東京都|北海道|京都府|大阪府|[一-龥]{2,3}県)?[一-龥ぁ-んァ-ヶa-zA-Z0-9０-９]{1,8}[市区町村][一-龥ぁ-んァ-ヶa-zA-Z0-9０-９]{0,15}(?:[0-9０-９]+丁目)?[0-9０-９\-－ー‐]*/g;
   const cands=[]; let am;
@@ -1402,17 +1418,24 @@ function computeExtract(words, text){
     const ctx=flat.slice(Math.max(0,idx-12),idx);
     if(ctx.includes("〒") || flat.slice(idx,idx+c.length+6).includes("営業所")) continue;
     if(!/[0-9０-９]/.test(c)) continue;               // 番地なしは住所とみなさない
-    if(/所有者|管理|月額|専有|徒歩/.test(c)) continue;  // 「区分所有者」等の誤マッチ除外
-    cands.push(c);
+    if(/所有者|管理|月額|専有|徒歩|売主|分譲|施工|新築/.test(c)) continue;  // 誤マッチ・業者情報の除外
+    // OCRノイズ等が先頭に付いた場合、都道府県表記から切り出す（例:「以計東京都港区…」）
+    const tm = c.match(/(?:東京都|北海道|京都府|大阪府|[一-龥]{2,3}県)[\s\S]*$/);
+    cands.push(tm ? tm[0] : c);
   }
-  out.addr = cands.length ? _extClean(cands.reduce((a,b)=>b.length>a.length?b:a)) : "";
+  // 都道府県から始まる候補を優先し、その中で最長を採用
+  const prefCands = cands.filter(c=>/^(?:東京都|北海道|京都府|大阪府|[一-龥]{2,3}県)/.test(c));
+  const addrPool = prefCands.length ? prefCands : cands;
+  out.addr = addrPool.length ? _extClean(addrPool.reduce((a,b)=>b.length>a.length?b:a)) : "";
   m = flat.match(/([一-龥ァ-ヶa-zA-Z0-9]*(?:線|ライン)?「[^」]+」駅?\s*徒歩\s*\d+\s*分)/);
   out.access = m ? m[1].replace(/\s+/g," ").replace("徒歩 ","徒歩").trim() : "";
+  // OCRページは閉じカッコ欠落等で周辺文字を巻き込みやすい: 長すぎる値は破棄
+  if(isOcr && out.access.length > 30) out.access = "";
   const araw = _extRight(words,"専有面積");
-  let area = (araw.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:㎡|平米|m2|m²)/)||[])[1] || "";
+  let area = (araw.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:㎡|平米|m2|m²|m(?![a-zA-Z0-9]))/)||[])[1] || "";
   if(!area){
     const i=flat.indexOf("専有面積");
-    if(i>=0) area=(flat.slice(i,i+60).match(/([0-9]+(?:\.[0-9]+)?)\s*(?:㎡|平米|m2|m²)/)||[])[1]||"";
+    if(i>=0) area=(flat.slice(i,i+60).match(/([0-9]+(?:\.[0-9]+)?)\s*(?:㎡|平米|m2|m²|m(?![a-zA-Z0-9]))/)||[])[1]||"";
   }
   const layout=(flat.match(/\b([1-9][SLDK]{1,4}(?:\+[A-Z]{1,4})?)\b/)||[])[1]||"";
   out.area = area && layout ? `${area}㎡ / ${layout}` : (area ? `${area}㎡` : layout);
@@ -1433,6 +1456,91 @@ function computeExtract(words, text){
 }
 
 const _filledCount = d => Object.values(d).filter(Boolean).length;
+
+/* ---- スキャン画像ページ用OCR（tesseract.js・日本語） ----
+   全段階にタイムアウトを設け、失敗してもページ全体の処理は止めない */
+const _withTimeout = (p, ms, label) =>
+  Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error(label+" timeout")), ms))]);
+
+let _tessWorkerPromise = null;
+function getTessWorker(){
+  if(_tessWorkerPromise) return _tessWorkerPromise;
+  _tessWorkerPromise = (async ()=>{
+    if(!window.Tesseract){
+      await _withTimeout(new Promise((ok,ng)=>{
+        const s=document.createElement("script");
+        s.src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js";
+        s.onload=ok; s.onerror=()=>ng(new Error("tesseract.js load error"));
+        document.head.appendChild(s);
+      }), 15000, "tesseract.js load");
+    }
+    return await Tesseract.createWorker("jpn");
+  })();
+  // 失敗したら次回リトライできるようにリセット
+  _tessWorkerPromise.catch(()=>{ _tessWorkerPromise = null; });
+  return _tessWorkerPromise;
+}
+
+/* ページ→canvas。①通常レンダリング（環境によりハングするためタイムアウト付き）
+   ②スキャンページの埋め込み画像を直接取り出す（レンダリング不可環境の代替） */
+async function _pageToCanvas(page){
+  try{
+    const scale = 220/72;   // OCR精度優先の高解像度（低いと住所等の小さな文字を読めない）
+    const viewport = page.getViewport({scale});
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    await _withTimeout(
+      page.render({canvasContext: canvas.getContext("2d"), viewport}).promise,
+      8000, "render");
+    return { canvas, scale };
+  }catch(e){ /* ②へフォールバック */ }
+  const lib = window.pdfjsLib;
+  const ops = await _withTimeout(page.getOperatorList(), 8000, "ops");
+  const idx = ops.fnArray.indexOf(lib.OPS.paintImageXObject);
+  if(idx < 0) return null;
+  const imgObj = await _withTimeout(
+    new Promise(res=>page.objs.get(ops.argsArray[idx][0], res)), 8000, "image");
+  if(!imgObj || !imgObj.width) return null;
+  // 原寸を基本に転写（縮小するとOCRが小さな文字＝住所等を読めなくなる）
+  const ratio = Math.min(1, 3000 / imgObj.width);
+  const cw = Math.round(imgObj.width * ratio), ch = Math.round(imgObj.height * ratio);
+  const canvas = document.createElement("canvas");
+  canvas.width = cw; canvas.height = ch;
+  const ctx = canvas.getContext("2d");
+  if(imgObj.bitmap){
+    ctx.drawImage(imgObj.bitmap, 0, 0, cw, ch);
+  } else if(imgObj.data){
+    const n = imgObj.width * imgObj.height;
+    const rgba = new Uint8ClampedArray(n*4);
+    if(imgObj.data.length === n*3){
+      for(let i=0;i<n;i++){ rgba[i*4]=imgObj.data[i*3]; rgba[i*4+1]=imgObj.data[i*3+1]; rgba[i*4+2]=imgObj.data[i*3+2]; rgba[i*4+3]=255; }
+    } else if(imgObj.data.length === n*4){
+      rgba.set(imgObj.data);
+    } else return null;
+    const full = document.createElement("canvas");
+    full.width = imgObj.width; full.height = imgObj.height;
+    full.getContext("2d").putImageData(new ImageData(rgba, imgObj.width, imgObj.height), 0, 0);
+    ctx.drawImage(full, 0, 0, cw, ch);
+  } else return null;
+  const pageW = page.getViewport({scale:1}).width;
+  return { canvas, scale: cw / pageW };   // canvas px → PDF pt の変換係数
+}
+
+async function ocrPdfPage(page){
+  const res = await _pageToCanvas(page);
+  if(!res) return null;
+  const worker = await getTessWorker();
+  const { data } = await _withTimeout(worker.recognize(res.canvas), 90000, "ocr");
+  const words = [];
+  for(const w of (data.words || [])){
+    const t = (w.text || "").trim();
+    if(!t) continue;
+    const b = w.bbox;
+    words.push([b.x0/res.scale, b.y0/res.scale, b.x1/res.scale, b.y1/res.scale, t]);
+  }
+  if(!words.length) return null;
+  return { words, text: data.text || words.map(w=>w[4]).join("\n") };
+}
 
 /* 複数物件が混在するPDF（物件リスト等）対応:
    ページごとに抽出して物件リストを返す。
@@ -1456,10 +1564,23 @@ async function extractAllClient(file){
       words.push([x0, y0, x0 + (it.width || t.length*h*0.9), y1, t]);
       text += t + "\n";
     }
-    if(text.trim().length < 30) continue;         // 写真だけのページ等
-    const info = computeExtract(words, text);
+    let pw = words, pt = text, isOcr = false;
+    if(text.trim().length < 30){
+      // テキストレイヤーが無い（スキャン画像）ページ → OCRを試す
+      try{
+        setMsg(`画像ページを読み取り中…（OCR・p${i}）`);
+        const ocr = await ocrPdfPage(page);
+        if(!ocr) continue;                        // OCR不可なら従来どおりスキップ
+        pw = ocr.words; pt = ocr.text; isOcr = true;
+      }catch(e){ continue; }
+    }
+    const info = computeExtract(pw, pt, isOcr);
     if(_filledCount(info) < 2) continue;           // 物件情報がほぼ無いページ
-    if(info.name){
+    if(isOcr){
+      // スキャン1枚＝独立した物件とみなす（前の物件へはマージしない）
+      info.page = i;
+      results.push(info);
+    } else if(info.name){
       info.page = i;
       results.push(info);
     } else if(results.length){
